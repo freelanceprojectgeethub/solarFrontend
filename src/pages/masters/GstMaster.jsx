@@ -241,11 +241,10 @@ const GstMaster = () => {
     <div className="space-y-6 animate-fade-in pb-10 relative">
       {/* Toast Notification */}
       {toast && (
-        <div className={`fixed bottom-5 right-5 z-50 flex items-center gap-2.5 px-4 py-3 rounded-xl shadow-xl border text-xs font-semibold backdrop-blur-xl animate-slide-down ${
-          toast.type === "error"
+        <div className={`fixed bottom-5 right-5 z-50 flex items-center gap-2.5 px-4 py-3 rounded-xl shadow-xl border text-xs font-semibold backdrop-blur-xl animate-slide-down ${toast.type === "error"
             ? "bg-red-950/95 border-red-500/40 text-red-200 ring-1 ring-red-500/20"
             : "bg-[#18181B]/95 border-[#FD4B23]/40 text-white ring-1 ring-[#FD4B23]/20"
-        }`}>
+          }`}>
           {toast.type === "error" ? <XCircle className="w-5 h-5 text-red-400 flex-shrink-0" /> : <CheckCircle2 className="w-5 h-5 text-[#FD4B23] flex-shrink-0" />}
           <span>{toast.message}</span>
         </div>
@@ -255,14 +254,7 @@ const GstMaster = () => {
       <div className="dashboard-hero relative overflow-hidden rounded-2xl bg-gradient-to-r from-[#111113] via-[#1A1A1A] to-[#251712] border border-white/[0.06] p-5 md:p-7 lg:p-8">
         <div className="relative z-10 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
           <div className="space-y-2.5">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 border border-white/15 backdrop-blur-md">
-              <span className="w-2 h-2 rounded-full bg-purple-400 animate-pulse"></span>
-              <span className="text-[11px] font-bold tracking-wider text-[#FFCE76] uppercase">Taxation Master</span>
-            </div>
             <h1 className="text-xl md:text-2xl lg:text-3xl font-extrabold text-white tracking-tight">GST Tax Rates & Configuration</h1>
-            <p className="text-xs text-gray-400 max-w-xl leading-relaxed">
-              Define GST tax brackets (5%, 12%, 18%, 28%), IGST for interstate transactions, and CGST/SGST intrastate breakdowns.
-            </p>
           </div>
           <div className="flex flex-wrap items-center gap-3">
             <button onClick={() => fetchGst(true)} disabled={refreshing}
@@ -416,9 +408,8 @@ const GstMaster = () => {
                     </td>
                     <td className="py-3.5 px-5">
                       <button onClick={() => handleToggleStatus(gst)}
-                        className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold transition-all cursor-pointer ${
-                          gst.status === "inactive" ? "bg-red-50 text-red-600 border border-red-200 hover:bg-red-100" : "bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100"
-                        }`} title="Toggle status">
+                        className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold transition-all cursor-pointer ${gst.status === "inactive" ? "bg-red-50 text-red-600 border border-red-200 hover:bg-red-100" : "bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100"
+                          }`} title="Toggle status">
                         <span className={`w-1.5 h-1.5 rounded-full ${gst.status === "inactive" ? "bg-red-500" : "bg-emerald-500"}`}></span>
                         {gst.status === "inactive" ? "Inactive" : "Active"}
                       </button>
@@ -453,9 +444,8 @@ const GstMaster = () => {
                     </div>
                   </div>
                   <button onClick={() => handleToggleStatus(gst)}
-                    className={`px-2 py-0.5 rounded-full text-[10px] font-bold border flex-shrink-0 ${
-                      gst.status === "inactive" ? "bg-red-50 text-red-600 border-red-200" : "bg-emerald-50 text-emerald-700 border-emerald-200"
-                    }`}>{gst.status === "inactive" ? "Inactive" : "Active"}</button>
+                    className={`px-2 py-0.5 rounded-full text-[10px] font-bold border flex-shrink-0 ${gst.status === "inactive" ? "bg-red-50 text-red-600 border-red-200" : "bg-emerald-50 text-emerald-700 border-emerald-200"
+                      }`}>{gst.status === "inactive" ? "Inactive" : "Active"}</button>
                 </div>
                 <div className="space-y-2 text-xs py-3 border-t border-b border-gray-100 my-3">
                   <div className="flex items-center justify-between"><span className="text-gray-400">Tax Rate</span><span className="font-mono font-bold text-gray-900 text-base">{gst.rate}%</span></div>
@@ -552,7 +542,7 @@ const GstMaster = () => {
             {/* Modal Form Body */}
             <form onSubmit={handleSubmit} className="flex flex-col flex-1 overflow-hidden">
               <div className="p-7 space-y-6 text-xs overflow-y-auto flex-1 custom-scrollbar">
-                
+
                 <div className="p-5 rounded-xl border border-slate-200/80 bg-slate-50/40 space-y-4">
                   <div>
                     <label className="form-label">

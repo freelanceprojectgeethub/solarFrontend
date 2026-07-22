@@ -250,14 +250,7 @@ const BankMaster = () => {
       <div className="dashboard-hero relative overflow-hidden rounded-2xl bg-gradient-to-r from-[#111113] via-[#1A1A1A] to-[#251712] border border-white/[0.06] p-5 md:p-7 lg:p-8">
         <div className="relative z-10 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
           <div className="space-y-2.5">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 border border-white/15 backdrop-blur-md">
-              <span className="w-2 h-2 rounded-full bg-blue-400 animate-pulse"></span>
-              <span className="text-[11px] font-bold tracking-wider text-[#FFCE76] uppercase">Financial Banking</span>
-            </div>
             <h1 className="text-xl md:text-2xl lg:text-3xl font-extrabold text-white tracking-tight">Bank Accounts Master</h1>
-            <p className="text-xs text-gray-400 max-w-xl leading-relaxed">
-              Manage company bank accounts, IFSC routing codes, branch details, and payment collection accounts.
-            </p>
           </div>
           <div className="flex flex-wrap items-center gap-3">
             <button onClick={() => fetchBanks(true)} disabled={refreshing}
@@ -277,38 +270,48 @@ const BankMaster = () => {
         </div>
 
         {/* KPI Stats Grid */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4 mt-6 pt-5 border-t border-white/[0.06]">
-          <div className="p-3.5 md:p-4 rounded-xl bg-white/[0.04] border border-white/[0.06]">
-            <div className="flex items-center justify-between text-gray-400 mb-2">
-              <span className="text-[11px] font-bold uppercase tracking-wider">Total Accounts</span>
-              <div className="w-8 h-8 rounded-lg bg-[#FD4B23]/20 text-[#FD4B23] flex items-center justify-center"><Landmark className="w-4 h-4" /></div>
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 mt-4 pt-3.5 border-t border-white/[0.06]">
+          <div className="px-3.5 py-2.5 rounded-lg bg-white/[0.04] border border-white/[0.06] flex items-center justify-between">
+            <div>
+              <span className="text-[10px] font-bold uppercase tracking-wider text-gray-400 block">Total Accounts</span>
+              <span className="text-base font-bold text-white font-mono">{stats.total}</span>
             </div>
-            <div className="text-xl md:text-2xl font-extrabold text-white">{stats.total}</div>
-            <div className="text-[11px] font-medium text-gray-400 mt-1">Bank Accounts</div>
+            <div className="w-7 h-7 rounded-md bg-[#FD4B23]/20 text-[#FD4B23] flex items-center justify-center flex-shrink-0">
+              <Landmark className="w-3.5 h-3.5" />
+            </div>
           </div>
-          <div className="p-3.5 md:p-4 rounded-xl bg-white/[0.04] border border-white/[0.06]">
-            <div className="flex items-center justify-between text-gray-400 mb-2">
-              <span className="text-[11px] font-bold uppercase tracking-wider">Active Accounts</span>
-              <div className="w-8 h-8 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center"><CheckCircle2 className="w-4 h-4" /></div>
+
+          <div className="px-3.5 py-2.5 rounded-lg bg-white/[0.04] border border-white/[0.06] flex items-center justify-between">
+            <div>
+              <span className="text-[10px] font-bold uppercase tracking-wider text-gray-400 block">Active Accounts</span>
+              <div className="flex items-baseline gap-1.5">
+                <span className="text-base font-bold text-white font-mono">{stats.active}</span>
+                <span className="text-[10px] font-semibold text-emerald-400">({stats.activeRate}%)</span>
+              </div>
             </div>
-            <div className="text-xl md:text-2xl font-extrabold text-white">{stats.active}</div>
-            <div className="text-[11px] font-semibold text-emerald-400 mt-1">{stats.activeRate}% Active</div>
+            <div className="w-7 h-7 rounded-md bg-emerald-500/20 text-emerald-400 flex items-center justify-center flex-shrink-0">
+              <CheckCircle2 className="w-3.5 h-3.5" />
+            </div>
           </div>
-          <div className="p-3.5 md:p-4 rounded-xl bg-white/[0.04] border border-white/[0.06]">
-            <div className="flex items-center justify-between text-gray-400 mb-2">
-              <span className="text-[11px] font-bold uppercase tracking-wider">IFSC Verified</span>
-              <div className="w-8 h-8 rounded-lg bg-[#FFCE76]/20 text-[#FFCE76] flex items-center justify-center"><ShieldCheck className="w-4 h-4" /></div>
+
+          <div className="px-3.5 py-2.5 rounded-lg bg-white/[0.04] border border-white/[0.06] flex items-center justify-between">
+            <div>
+              <span className="text-[10px] font-bold uppercase tracking-wider text-gray-400 block">IFSC Verified</span>
+              <span className="text-base font-bold text-[#FFCE76] font-mono">{stats.withIfsc}</span>
             </div>
-            <div className="text-xl md:text-2xl font-extrabold text-white">{stats.withIfsc}</div>
-            <div className="text-[11px] font-semibold text-[#FFCE76] mt-1">Routing Configured</div>
+            <div className="w-7 h-7 rounded-md bg-[#FFCE76]/20 text-[#FFCE76] flex items-center justify-center flex-shrink-0">
+              <ShieldCheck className="w-3.5 h-3.5" />
+            </div>
           </div>
-          <div className="p-3.5 md:p-4 rounded-xl bg-white/[0.04] border border-white/[0.06]">
-            <div className="flex items-center justify-between text-gray-400 mb-2">
-              <span className="text-[11px] font-bold uppercase tracking-wider">Payment Ready</span>
-              <div className="w-8 h-8 rounded-lg bg-blue-500/20 text-blue-400 flex items-center justify-center"><CreditCard className="w-4 h-4" /></div>
+
+          <div className="px-3.5 py-2.5 rounded-lg bg-white/[0.04] border border-white/[0.06] flex items-center justify-between">
+            <div>
+              <span className="text-[10px] font-bold uppercase tracking-wider text-gray-400 block">Payment Ready</span>
+              <span className="text-base font-bold text-blue-400 font-mono">Active</span>
             </div>
-            <div className="text-xl md:text-2xl font-extrabold text-white">Active</div>
-            <div className="text-[11px] font-medium text-gray-400 mt-1">RTGS / NEFT Ready</div>
+            <div className="w-7 h-7 rounded-md bg-blue-500/20 text-blue-400 flex items-center justify-center flex-shrink-0">
+              <CreditCard className="w-3.5 h-3.5" />
+            </div>
           </div>
         </div>
       </div>

@@ -373,11 +373,10 @@ const CompanyMaster = () => {
       {/* Toast Notification Floating Alert */}
       {toast && (
         <div
-          className={`fixed bottom-5 right-5 z-50 flex items-center gap-2.5 px-4 py-3 rounded-xl shadow-xl border text-xs font-semibold backdrop-blur-xl animate-slide-down ${
-            toast.type === "error"
+          className={`fixed bottom-5 right-5 z-50 flex items-center gap-2.5 px-4 py-3 rounded-xl shadow-xl border text-xs font-semibold backdrop-blur-xl animate-slide-down ${toast.type === "error"
               ? "bg-red-950/95 border-red-500/40 text-red-200 ring-1 ring-red-500/20"
               : "bg-[#18181B]/95 border-[#FD4B23]/40 text-white ring-1 ring-[#FD4B23]/20"
-          }`}
+            }`}
         >
           {toast.type === "error" ? (
             <XCircle className="w-5 h-5 text-red-400 flex-shrink-0" />
@@ -392,18 +391,9 @@ const CompanyMaster = () => {
       <div className="dashboard-hero relative overflow-hidden rounded-2xl bg-gradient-to-r from-[#111113] via-[#1A1A1A] to-[#251712] border border-white/[0.06] p-5 md:p-7 lg:p-8">
         <div className="relative z-10 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
           <div className="space-y-2.5">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 border border-white/15 backdrop-blur-md">
-              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-              <span className="text-[11px] font-bold tracking-wider text-[#FFCE76] uppercase">
-                Enterprise Company Directory
-              </span>
-            </div>
             <h1 className="text-xl md:text-2xl lg:text-3xl font-extrabold text-white tracking-tight">
               Company Master & Profiles
             </h1>
-            <p className="text-xs text-gray-400 max-w-xl leading-relaxed">
-              Manage parent entities, subsidiaries, tax profiles (GSTIN), and corporate contact records with real-time analytics.
-            </p>
           </div>
 
           <div className="flex flex-wrap items-center gap-3">
@@ -525,11 +515,10 @@ const CompanyMaster = () => {
                 setStatusFilter("all");
                 setPage(1);
               }}
-              className={`px-3 py-1.5 rounded-lg font-bold transition-all ${
-                statusFilter === "all"
+              className={`px-3 py-1.5 rounded-lg font-bold transition-all ${statusFilter === "all"
                   ? "bg-white text-gray-900 shadow-sm"
                   : "text-gray-500 hover:text-gray-800"
-              }`}
+                }`}
             >
               All ({companies.length})
             </button>
@@ -538,11 +527,10 @@ const CompanyMaster = () => {
                 setStatusFilter("active");
                 setPage(1);
               }}
-              className={`px-3 py-1.5 rounded-lg font-bold transition-all ${
-                statusFilter === "active"
+              className={`px-3 py-1.5 rounded-lg font-bold transition-all ${statusFilter === "active"
                   ? "bg-emerald-500 text-white shadow-sm"
                   : "text-gray-500 hover:text-gray-800"
-              }`}
+                }`}
             >
               Active ({stats.active})
             </button>
@@ -551,11 +539,10 @@ const CompanyMaster = () => {
                 setStatusFilter("inactive");
                 setPage(1);
               }}
-              className={`px-3 py-1.5 rounded-lg font-bold transition-all ${
-                statusFilter === "inactive"
+              className={`px-3 py-1.5 rounded-lg font-bold transition-all ${statusFilter === "inactive"
                   ? "bg-red-500 text-white shadow-sm"
                   : "text-gray-500 hover:text-gray-800"
-              }`}
+                }`}
             >
               Inactive ({companies.length - stats.active})
             </button>
@@ -579,22 +566,20 @@ const CompanyMaster = () => {
           <div className="inline-flex p-1 rounded-xl bg-gray-100/90 border border-gray-200">
             <button
               onClick={() => setViewMode("table")}
-              className={`p-2 rounded-lg transition-all ${
-                viewMode === "table"
+              className={`p-2 rounded-lg transition-all ${viewMode === "table"
                   ? "bg-white text-[#FD4B23] shadow-sm"
                   : "text-gray-400 hover:text-gray-700"
-              }`}
+                }`}
               title="Table View"
             >
               <List className="w-4 h-4" />
             </button>
             <button
               onClick={() => setViewMode("grid")}
-              className={`p-2 rounded-lg transition-all ${
-                viewMode === "grid"
+              className={`p-2 rounded-lg transition-all ${viewMode === "grid"
                   ? "bg-white text-[#FD4B23] shadow-sm"
                   : "text-gray-400 hover:text-gray-700"
-              }`}
+                }`}
               title="Grid Cards View"
             >
               <LayoutGrid className="w-4 h-4" />
@@ -757,17 +742,15 @@ const CompanyMaster = () => {
                       <td className="py-4 px-6">
                         <button
                           onClick={() => handleToggleStatus(company)}
-                          className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold transition-all cursor-pointer ${
-                            company.status === "inactive"
+                          className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold transition-all cursor-pointer ${company.status === "inactive"
                               ? "bg-red-50 text-red-600 border border-red-200 hover:bg-red-100"
                               : "bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100"
-                          }`}
+                            }`}
                           title="Click to toggle status"
                         >
                           <span
-                            className={`w-1.5 h-1.5 rounded-full ${
-                              company.status === "inactive" ? "bg-red-500" : "bg-emerald-500"
-                            }`}
+                            className={`w-1.5 h-1.5 rounded-full ${company.status === "inactive" ? "bg-red-500" : "bg-emerald-500"
+                              }`}
                           ></span>
                           <span>{company.status === "inactive" ? "Inactive" : "Active"}</span>
                         </button>
@@ -837,11 +820,10 @@ const CompanyMaster = () => {
 
                     <button
                       onClick={() => handleToggleStatus(company)}
-                      className={`px-2.5 py-1 rounded-full text-[10px] font-bold border transition-colors flex-shrink-0 ${
-                        company.status === "inactive"
+                      className={`px-2.5 py-1 rounded-full text-[10px] font-bold border transition-colors flex-shrink-0 ${company.status === "inactive"
                           ? "bg-red-50 text-red-600 border-red-200"
                           : "bg-emerald-50 text-emerald-700 border-emerald-200"
-                      }`}
+                        }`}
                     >
                       {company.status === "inactive" ? "Inactive" : "Active"}
                     </button>
@@ -972,11 +954,10 @@ const CompanyMaster = () => {
                 <div className="flex items-center justify-between p-4 rounded-2xl bg-gray-50 border border-gray-200">
                   <span className="font-bold text-gray-700">Account Health</span>
                   <span
-                    className={`px-3 py-1 rounded-full text-xs font-bold ${
-                      inspectCompany.status === "inactive"
+                    className={`px-3 py-1 rounded-full text-xs font-bold ${inspectCompany.status === "inactive"
                         ? "bg-red-50 text-red-600 border border-red-200"
                         : "bg-emerald-50 text-emerald-700 border border-emerald-200"
-                    }`}
+                      }`}
                   >
                     {inspectCompany.status === "inactive" ? "Inactive" : "Active Operating"}
                   </span>
@@ -1116,7 +1097,7 @@ const CompanyMaster = () => {
             {/* Modal Form Body */}
             <form onSubmit={handleSubmit} className="flex flex-col flex-1 overflow-hidden">
               <div className="p-7 space-y-6 text-xs overflow-y-auto flex-1 custom-scrollbar">
-                
+
                 {/* Section 1: Company Profile Card */}
                 <div className="p-5 rounded-xl border border-slate-200/80 bg-slate-50/40 space-y-4">
                   <div className="text-xs font-bold uppercase tracking-wider text-slate-700 pb-2 border-b border-slate-200/80 flex items-center gap-2">

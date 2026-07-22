@@ -204,11 +204,6 @@ const PurchaseEntry = () => {
       {/* Page Breadcrumb & Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <div className="flex items-center gap-2 text-xs font-semibold text-slate-500 mb-1">
-            <span>Transactions</span>
-            <span>/</span>
-            <span className="text-slate-900 font-bold">Purchase Entry</span>
-          </div>
           <h1 className="text-xl font-bold text-slate-900 tracking-tight flex items-center gap-2.5">
             <div className="w-8 h-8 rounded-lg bg-[#FD4B23]/10 text-[#FD4B23] flex items-center justify-center">
               <ShoppingBag className="w-4 h-4" />

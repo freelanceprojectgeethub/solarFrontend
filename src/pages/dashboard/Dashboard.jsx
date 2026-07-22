@@ -244,11 +244,6 @@ const Dashboard = () => {
         <div className="dashboard-hero-content">
           <div className="flex flex-col xl:flex-row xl:items-end xl:justify-between gap-8">
             <div className="space-y-5 max-w-2xl">
-              <div className="dashboard-hero-badge">
-                <span className="dashboard-hero-badge-dot" />
-                Live Enterprise Dashboard
-              </div>
-
               <div>
                 <p className="text-sm font-medium text-white/50 flex items-center gap-2 mb-3">
                   <Calendar className="w-4 h-4" />
@@ -257,11 +252,6 @@ const Dashboard = () => {
                 <h1 className="text-2xl sm:text-3xl lg:text-[2rem] font-extrabold text-white tracking-tight leading-tight">
                   Good day, {firstName}
                 </h1>
-                <p className="text-sm sm:text-base text-white/60 mt-3 leading-relaxed max-w-xl">
-                  Real-time financial intelligence for{" "}
-                  <span className="text-secondary font-semibold">{companyName}</span>.
-                  Monitor sales, purchases, and cash position from one unified view.
-                </p>
               </div>
 
               <div className="flex flex-wrap items-center gap-3">

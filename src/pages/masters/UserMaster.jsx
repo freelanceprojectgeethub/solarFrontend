@@ -185,11 +185,6 @@ const UserMaster = () => {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <div className="flex items-center gap-2 text-xs font-semibold text-slate-500 mb-1">
-            <span>Settings</span>
-            <span>/</span>
-            <span className="text-slate-900 font-bold">User Management</span>
-          </div>
           <h1 className="text-xl font-bold text-slate-900 tracking-tight flex items-center gap-2.5">
             <div className="w-8 h-8 rounded-lg bg-blue-500/10 text-blue-600 flex items-center justify-center">
               <UserCog className="w-4 h-4" />
