@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import api from "../../utils/api";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   Search,
   Plus,
@@ -9,7 +10,6 @@ import {
   X,
   Eye,
   Copy,
-  Check,
   Download,
   RefreshCw,
   LayoutGrid,
@@ -17,22 +17,11 @@ import {
   Phone,
   Mail,
   MapPin,
-  FileText,
   CheckCircle2,
   XCircle,
   AlertTriangle,
   ShieldCheck,
-  ArrowUpDown,
-  Sparkles,
-  ExternalLink,
-  ChevronRight,
-  SlidersHorizontal,
-  Building,
-  Hash,
-  Clock,
   Briefcase,
-  Calendar,
-  Filter
 } from "lucide-react";
 
 // State Code mapping for Indian GSTINs
@@ -82,26 +71,19 @@ const getGSTState = (gstNumber) => {
   return GST_STATE_CODES[code] || "India";
 };
 
-const isValidGSTIN = (gst) => {
-  if (!gst) return false;
-  const gstRegex = /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/;
-  return gstRegex.test(gst.trim().toUpperCase());
-};
-
 const CompanyMaster = () => {
   // Main Data States
   const [companies, setCompanies] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState("all"); // 'all', 'active', 'inactive'
-  const [sortBy, setSortBy] = useState("newest"); // 'newest', 'oldest', 'name_asc', 'name_desc'
-  const [viewMode, setViewMode] = useState("table"); // 'table', 'grid'
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [sortBy, setSortBy] = useState("newest");
+  const [viewMode, setViewMode] = useState("table");
 
   // Pagination
   const [page, setPage] = useState(1);
-  const [limit, setLimit] = useState(10);
-  const [totalPages, setTotalPages] = useState(1);
+  const limit = 10;
   const [totalCount, setTotalCount] = useState(0);
 
   // Modal & Drawer States
@@ -117,7 +99,7 @@ const CompanyMaster = () => {
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [deleting, setDeleting] = useState(false);
 
-  // Copy Feedback Toast
+  // Toast Notification
   const [toast, setToast] = useState(null);
 
   // Form State
@@ -141,11 +123,10 @@ const CompanyMaster = () => {
 
     try {
       const res = await api.get("/companies", {
-        params: { page, limit: 50, search }, // Fetch up to 50 for client sorting/kpi accuracy
+        params: { page, limit: 50, search },
       });
       const data = res.data.data || [];
       setCompanies(data);
-      setTotalPages(res.data.totalPages || 1);
       setTotalCount(res.data.total || data.length);
     } catch (err) {
       console.error("Failed to fetch companies:", err);
@@ -180,14 +161,12 @@ const CompanyMaster = () => {
   const filteredCompanies = useMemo(() => {
     let result = [...companies];
 
-    // Status Filter
     if (statusFilter === "active") {
       result = result.filter((c) => c.status !== "inactive");
     } else if (statusFilter === "inactive") {
       result = result.filter((c) => c.status === "inactive");
     }
 
-    // Sort
     result.sort((a, b) => {
       if (sortBy === "name_asc") return a.name.localeCompare(b.name);
       if (sortBy === "name_desc") return b.name.localeCompare(a.name);
@@ -369,220 +348,412 @@ const CompanyMaster = () => {
   };
 
   return (
-    <div className="space-y-6 animate-fade-in pb-10 relative">
+    <div style={{ display: "flex", flexDirection: "column", gap: 20 }} className="pb-10 relative">
       {/* Toast Notification Floating Alert */}
-      {toast && (
+      <AnimatePresence>
+        {toast && (
+          <motion.div
+            initial={{ opacity: 0, y: 20, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 20, scale: 0.95 }}
+            style={{
+              position: "fixed",
+              bottom: 24,
+              right: 24,
+              zIndex: 100,
+              display: "flex",
+              alignItems: "center",
+              gap: 10,
+              padding: "12px 18px",
+              borderRadius: 14,
+              backgroundColor: toast.type === "error" ? "rgba(239,68,68,0.95)" : "rgba(18,18,22,0.95)",
+              color: "#ffffff",
+              fontSize: 13,
+              fontWeight: 500,
+              boxShadow: "0 14px 30px rgba(0,0,0,0.25)",
+              border: toast.type === "error" ? "1px solid rgba(255,255,255,0.2)" : "1px solid rgba(253,75,35,0.3)",
+              backdropFilter: "blur(12px)",
+            }}
+          >
+            {toast.type === "error" ? (
+              <XCircle size={18} color="#ffffff" />
+            ) : (
+              <CheckCircle2 size={18} color="#FD4B23" />
+            )}
+            <span>{toast.message}</span>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Page Title & Top Actions Bar */}
+      <div style={{ display: "flex", flexDirection: "column", gap: 16 }} className="md:!flex-row md:!items-center md:!justify-between">
+        <div>
+          <h1 style={{ fontSize: 24, fontWeight: 700, color: "#111827", letterSpacing: "-0.02em", margin: 0 }}>
+            Companies
+          </h1>
+          <p style={{ fontSize: 13, color: "#6b7280", marginTop: 4, margin: 0 }}>
+            Manage organization profiles, GSTIN tax identifiers, and corporate records.
+          </p>
+        </div>
+
+        <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+          <button
+            onClick={() => fetchCompanies(true)}
+            disabled={refreshing}
+            style={{
+              height: 38,
+              padding: "0 14px",
+              borderRadius: 10,
+              backgroundColor: "#ffffff",
+              border: "1px solid #e5e7eb",
+              color: "#374151",
+              fontSize: 12,
+              fontWeight: 600,
+              cursor: refreshing ? "not-allowed" : "pointer",
+              display: "flex",
+              alignItems: "center",
+              gap: 8,
+              transition: "all 0.2s",
+            }}
+            onMouseEnter={(e) => { if (!refreshing) e.currentTarget.style.backgroundColor = "#f9fafb"; }}
+            onMouseLeave={(e) => { if (!refreshing) e.currentTarget.style.backgroundColor = "#ffffff"; }}
+            title="Refresh Companies Data"
+          >
+            <RefreshCw size={14} className={refreshing ? "animate-spin text-[#FD4B23]" : ""} />
+            <span>Refresh</span>
+          </button>
+
+          <button
+            onClick={exportToCSV}
+            style={{
+              height: 38,
+              padding: "0 14px",
+              borderRadius: 10,
+              backgroundColor: "#ffffff",
+              border: "1px solid #e5e7eb",
+              color: "#374151",
+              fontSize: 12,
+              fontWeight: 600,
+              cursor: "pointer",
+              display: "flex",
+              alignItems: "center",
+              gap: 8,
+              transition: "all 0.2s",
+            }}
+            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "#f9fafb"}
+            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = "#ffffff"}
+            title="Export CSV Report"
+          >
+            <Download size={14} color="#FD4B23" />
+            <span>Export CSV</span>
+          </button>
+
+          <button
+            onClick={handleOpenAddModal}
+            style={{
+              height: 38,
+              padding: "0 18px",
+              borderRadius: 10,
+              border: "none",
+              background: "linear-gradient(135deg, #FD4B23 0%, #e5401e 100%)",
+              color: "#ffffff",
+              fontSize: 13,
+              fontWeight: 600,
+              cursor: "pointer",
+              display: "flex",
+              alignItems: "center",
+              gap: 8,
+              boxShadow: "0 4px 14px rgba(253,75,35,0.25)",
+              transition: "all 0.2s",
+            }}
+            onMouseEnter={(e) => e.currentTarget.style.boxShadow = "0 6px 20px rgba(253,75,35,0.35)"}
+            onMouseLeave={(e) => e.currentTarget.style.boxShadow = "0 4px 14px rgba(253,75,35,0.25)"}
+          >
+            <Plus size={16} strokeWidth={2.2} />
+            <span>Add Company</span>
+          </button>
+        </div>
+      </div>
+
+      {/* KPI Stat Cards Grid */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 14 }}>
+        {/* Card 1: Total Companies */}
         <div
-          className={`fixed bottom-5 right-5 z-50 flex items-center gap-2.5 px-4 py-3 rounded-xl shadow-xl border text-xs font-semibold backdrop-blur-xl animate-slide-down ${toast.type === "error"
-              ? "bg-red-950/95 border-red-500/40 text-red-200 ring-1 ring-red-500/20"
-              : "bg-[#18181B]/95 border-[#FD4B23]/40 text-white ring-1 ring-[#FD4B23]/20"
-            }`}
+          style={{
+            backgroundColor: "#ffffff",
+            borderRadius: 16,
+            padding: "16px 20px",
+            border: "1px solid #e5e7eb",
+            display: "flex",
+            flexDirection: "column",
+            justifyContent: "space-between",
+            boxShadow: "0 2px 6px rgba(0,0,0,0.02)",
+          }}
         >
-          {toast.type === "error" ? (
-            <XCircle className="w-5 h-5 text-red-400 flex-shrink-0" />
-          ) : (
-            <CheckCircle2 className="w-5 h-5 text-[#FD4B23] flex-shrink-0" />
-          )}
-          <span>{toast.message}</span>
-        </div>
-      )}
-
-      {/* Hero Header & Executive Banner */}
-      <div className="dashboard-hero relative overflow-hidden rounded-2xl bg-gradient-to-r from-[#111113] via-[#1A1A1A] to-[#251712] border border-white/[0.06] p-5 md:p-7 lg:p-8">
-        <div className="relative z-10 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
-          <div className="space-y-2.5">
-            <h1 className="text-xl md:text-2xl lg:text-3xl font-extrabold text-white tracking-tight">
-              Company Master & Profiles
-            </h1>
+          <div style={{ display: "flex", alignItems: "center", justifyBetween: "space-between", justifyContent: "space-between", marginBottom: 12 }}>
+            <span style={{ fontSize: 11, fontWeight: 600, color: "#6b7280", textTransform: "uppercase", letterSpacing: "0.05em" }}>Total Companies</span>
+            <div style={{ width: 34, height: 34, borderRadius: 10, backgroundColor: "rgba(253,75,35,0.08)", color: "#FD4B23", display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <Building2 size={17} />
+            </div>
           </div>
-
-          <div className="flex flex-wrap items-center gap-3">
-            <button
-              onClick={() => fetchCompanies(true)}
-              disabled={refreshing}
-              className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs font-semibold border border-white/15 transition-all active:scale-95 disabled:opacity-50"
-              title="Refresh Data"
-            >
-              <RefreshCw className={`w-4 h-4 ${refreshing ? "animate-spin text-[#FD4B23]" : ""}`} />
-              <span className="hidden sm:inline">Refresh</span>
-            </button>
-
-            <button
-              onClick={exportToCSV}
-              className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs font-semibold border border-white/15 transition-all active:scale-95"
-              title="Export CSV Report"
-            >
-              <Download className="w-4 h-4 text-[#FFCE76]" />
-              <span className="hidden sm:inline">Export CSV</span>
-            </button>
-
-            <button
-              onClick={handleOpenAddModal}
-              className="btn-accent text-xs px-5 py-2.5 shadow-lg shadow-[#FD4B23]/30 hover:shadow-[#FD4B23]/50"
-            >
-              <Plus className="w-4 h-4" />
-              <span>Add Company</span>
-            </button>
+          <div>
+            <div style={{ fontSize: 24, fontWeight: 700, color: "#111827", letterSpacing: "-0.02em" }}>{stats.total}</div>
+            <div style={{ fontSize: 11, fontWeight: 500, color: "#9ca3af", marginTop: 2 }}>Master Records</div>
           </div>
         </div>
 
-        {/* KPI Stats Grid */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4 mt-6 pt-5 border-t border-white/[0.06]">
-          <div className="p-3.5 md:p-4 rounded-xl bg-white/[0.04] border border-white/[0.06] flex flex-col justify-between">
-            <div className="flex items-center justify-between text-gray-400 mb-2">
-              <span className="text-[11px] font-bold uppercase tracking-wider">Total Companies</span>
-              <div className="w-8 h-8 rounded-lg bg-[#FD4B23]/20 text-[#FD4B23] flex items-center justify-center">
-                <Building2 className="w-4 h-4" />
-              </div>
-            </div>
-            <div>
-              <div className="text-xl md:text-2xl font-extrabold text-white">{stats.total}</div>
-              <div className="text-[11px] font-medium text-gray-400 mt-1">Master Records</div>
-            </div>
-          </div>
-
-          <div className="p-3.5 md:p-4 rounded-xl bg-white/[0.04] border border-white/[0.06] flex flex-col justify-between">
-            <div className="flex items-center justify-between text-gray-400 mb-2">
-              <span className="text-[11px] font-bold uppercase tracking-wider">Active Entities</span>
-              <div className="w-8 h-8 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center">
-                <CheckCircle2 className="w-4 h-4" />
-              </div>
-            </div>
-            <div>
-              <div className="text-xl md:text-2xl font-extrabold text-white">{stats.active}</div>
-              <div className="text-[11px] font-semibold text-emerald-400 mt-1">
-                {stats.total > 0 ? Math.round((stats.active / stats.total) * 100) : 0}% Active Operating
-              </div>
+        {/* Card 2: Active Entities */}
+        <div
+          style={{
+            backgroundColor: "#ffffff",
+            borderRadius: 16,
+            padding: "16px 20px",
+            border: "1px solid #e5e7eb",
+            display: "flex",
+            flexDirection: "column",
+            justifyContent: "space-between",
+            boxShadow: "0 2px 6px rgba(0,0,0,0.02)",
+          }}
+        >
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
+            <span style={{ fontSize: 11, fontWeight: 600, color: "#6b7280", textTransform: "uppercase", letterSpacing: "0.05em" }}>Active Entities</span>
+            <div style={{ width: 34, height: 34, borderRadius: 10, backgroundColor: "rgba(34,197,94,0.08)", color: "#16a34a", display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <CheckCircle2 size={17} />
             </div>
           </div>
-
-          <div className="p-3.5 md:p-4 rounded-xl bg-white/[0.04] border border-white/[0.06] flex flex-col justify-between">
-            <div className="flex items-center justify-between text-gray-400 mb-2">
-              <span className="text-[11px] font-bold uppercase tracking-wider">GST Registered</span>
-              <div className="w-8 h-8 rounded-lg bg-[#FFCE76]/20 text-[#FFCE76] flex items-center justify-center">
-                <ShieldCheck className="w-4 h-4" />
-              </div>
-            </div>
-            <div>
-              <div className="text-xl md:text-2xl font-extrabold text-white">{stats.gstCount}</div>
-              <div className="text-[11px] font-semibold text-[#FFCE76] mt-1">Tax Verified Profiles</div>
+          <div>
+            <div style={{ fontSize: 24, fontWeight: 700, color: "#111827", letterSpacing: "-0.02em" }}>{stats.active}</div>
+            <div style={{ fontSize: 11, fontWeight: 600, color: "#16a34a", marginTop: 2 }}>
+              {stats.total > 0 ? Math.round((stats.active / stats.total) * 100) : 0}% Active Operating
             </div>
           </div>
+        </div>
 
-          <div className="p-3.5 md:p-4 rounded-xl bg-white/[0.04] border border-white/[0.06] flex flex-col justify-between">
-            <div className="flex items-center justify-between text-gray-400 mb-2">
-              <span className="text-[11px] font-bold uppercase tracking-wider">Contact Coverage</span>
-              <div className="w-8 h-8 rounded-lg bg-blue-500/20 text-blue-400 flex items-center justify-center">
-                <Briefcase className="w-4 h-4" />
-              </div>
+        {/* Card 3: GST Registered */}
+        <div
+          style={{
+            backgroundColor: "#ffffff",
+            borderRadius: 16,
+            padding: "16px 20px",
+            border: "1px solid #e5e7eb",
+            display: "flex",
+            flexDirection: "column",
+            justifyContent: "space-between",
+            boxShadow: "0 2px 6px rgba(0,0,0,0.02)",
+          }}
+        >
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
+            <span style={{ fontSize: 11, fontWeight: 600, color: "#6b7280", textTransform: "uppercase", letterSpacing: "0.05em" }}>GST Registered</span>
+            <div style={{ width: 34, height: 34, borderRadius: 10, backgroundColor: "rgba(234,179,8,0.08)", color: "#d97706", display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <ShieldCheck size={17} />
             </div>
-            <div>
-              <div className="text-xl md:text-2xl font-extrabold text-white">{stats.contactRate}%</div>
-              <div className="text-[11px] font-medium text-gray-400 mt-1">With Phone or Email</div>
+          </div>
+          <div>
+            <div style={{ fontSize: 24, fontWeight: 700, color: "#111827", letterSpacing: "-0.02em" }}>{stats.gstCount}</div>
+            <div style={{ fontSize: 11, fontWeight: 600, color: "#d97706", marginTop: 2 }}>Tax Verified Profiles</div>
+          </div>
+        </div>
+
+        {/* Card 4: Contact Coverage */}
+        <div
+          style={{
+            backgroundColor: "#ffffff",
+            borderRadius: 16,
+            padding: "16px 20px",
+            border: "1px solid #e5e7eb",
+            display: "flex",
+            flexDirection: "column",
+            justifyContent: "space-between",
+            boxShadow: "0 2px 6px rgba(0,0,0,0.02)",
+          }}
+        >
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
+            <span style={{ fontSize: 11, fontWeight: 600, color: "#6b7280", textTransform: "uppercase", letterSpacing: "0.05em" }}>Contact Coverage</span>
+            <div style={{ width: 34, height: 34, borderRadius: 10, backgroundColor: "rgba(59,130,246,0.08)", color: "#2563eb", display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <Briefcase size={17} />
             </div>
+          </div>
+          <div>
+            <div style={{ fontSize: 24, fontWeight: 700, color: "#111827", letterSpacing: "-0.02em" }}>{stats.contactRate}%</div>
+            <div style={{ fontSize: 11, fontWeight: 500, color: "#9ca3af", marginTop: 2 }}>With Phone or Email</div>
           </div>
         </div>
       </div>
 
       {/* Filter & Control Bar */}
-      <div className="bg-white p-3.5 md:p-4 rounded-xl border border-gray-200/80 flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3">
+      <div
+        style={{
+          backgroundColor: "#ffffff",
+          borderRadius: 16,
+          padding: "14px 18px",
+          border: "1px solid #e5e7eb",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          gap: 12,
+          flexWrap: "wrap",
+          boxShadow: "0 1px 3px rgba(0,0,0,0.02)",
+        }}
+      >
         {/* Left: Search Input */}
-        <div className="relative flex-1 max-w-md">
-          <Search className="w-4 h-4 text-gray-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+        <div style={{ position: "relative", flex: 1, minWidth: 260, maxWidth: 420 }}>
+          <Search size={15} color="#9ca3af" style={{ position: "absolute", left: 14, top: "50%", transform: "translateY(-50%)" }} />
           <input
             type="text"
             placeholder="Search company name, email, phone, GSTIN..."
             value={search}
             onChange={handleSearchChange}
-            className="input-field pl-10 pr-9 py-2.5 text-xs w-full bg-gray-50/80 focus:bg-white transition-colors"
+            style={{
+              width: "100%",
+              height: 38,
+              paddingLeft: 38,
+              paddingRight: search ? 34 : 14,
+              fontSize: 13,
+              fontFamily: "'Inter', system-ui, sans-serif",
+              backgroundColor: "#f9fafb",
+              border: "1px solid #e5e7eb",
+              borderRadius: 10,
+              outline: "none",
+              color: "#111827",
+              transition: "all 0.2s",
+            }}
+            onFocus={(e) => {
+              e.target.style.borderColor = "rgba(253,75,35,0.4)";
+              e.target.style.backgroundColor = "#ffffff";
+              e.target.style.boxShadow = "0 0 0 3px rgba(253,75,35,0.08)";
+            }}
+            onBlur={(e) => {
+              e.target.style.borderColor = "#e5e7eb";
+              e.target.style.backgroundColor = "#f9fafb";
+              e.target.style.boxShadow = "none";
+            }}
           />
           {search && (
             <button
               onClick={() => setSearch("")}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 p-0.5"
+              style={{ position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", color: "#9ca3af", cursor: "pointer", padding: 2 }}
             >
-              <X className="w-3.5 h-3.5" />
+              <X size={14} />
             </button>
           )}
         </div>
 
-        {/* Right Controls: Filters, Sort & View Mode Switcher */}
-        <div className="flex flex-wrap items-center justify-between lg:justify-end gap-3">
-          {/* Status Filter Pill Tabs */}
-          <div className="inline-flex p-1 rounded-xl bg-gray-100/90 border border-gray-200 text-xs">
+        {/* Right Controls */}
+        <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+          {/* Status Tabs */}
+          <div style={{ display: "inline-flex", padding: 3, borderRadius: 10, backgroundColor: "#f3f4f6", border: "1px solid #e5e7eb" }}>
             <button
-              onClick={() => {
-                setStatusFilter("all");
-                setPage(1);
+              onClick={() => { setStatusFilter("all"); setPage(1); }}
+              style={{
+                padding: "5px 12px",
+                borderRadius: 8,
+                border: "none",
+                fontSize: 12,
+                fontWeight: 600,
+                cursor: "pointer",
+                backgroundColor: statusFilter === "all" ? "#ffffff" : "transparent",
+                color: statusFilter === "all" ? "#111827" : "#6b7280",
+                boxShadow: statusFilter === "all" ? "0 1px 3px rgba(0,0,0,0.08)" : "none",
+                transition: "all 0.2s",
               }}
-              className={`px-3 py-1.5 rounded-lg font-bold transition-all ${statusFilter === "all"
-                  ? "bg-white text-gray-900 shadow-sm"
-                  : "text-gray-500 hover:text-gray-800"
-                }`}
             >
               All ({companies.length})
             </button>
             <button
-              onClick={() => {
-                setStatusFilter("active");
-                setPage(1);
+              onClick={() => { setStatusFilter("active"); setPage(1); }}
+              style={{
+                padding: "5px 12px",
+                borderRadius: 8,
+                border: "none",
+                fontSize: 12,
+                fontWeight: 600,
+                cursor: "pointer",
+                backgroundColor: statusFilter === "active" ? "#16a34a" : "transparent",
+                color: statusFilter === "active" ? "#ffffff" : "#6b7280",
+                boxShadow: statusFilter === "active" ? "0 1px 3px rgba(0,0,0,0.12)" : "none",
+                transition: "all 0.2s",
               }}
-              className={`px-3 py-1.5 rounded-lg font-bold transition-all ${statusFilter === "active"
-                  ? "bg-emerald-500 text-white shadow-sm"
-                  : "text-gray-500 hover:text-gray-800"
-                }`}
             >
               Active ({stats.active})
             </button>
             <button
-              onClick={() => {
-                setStatusFilter("inactive");
-                setPage(1);
+              onClick={() => { setStatusFilter("inactive"); setPage(1); }}
+              style={{
+                padding: "5px 12px",
+                borderRadius: 8,
+                border: "none",
+                fontSize: 12,
+                fontWeight: 600,
+                cursor: "pointer",
+                backgroundColor: statusFilter === "inactive" ? "#ef4444" : "transparent",
+                color: statusFilter === "inactive" ? "#ffffff" : "#6b7280",
+                boxShadow: statusFilter === "inactive" ? "0 1px 3px rgba(0,0,0,0.12)" : "none",
+                transition: "all 0.2s",
               }}
-              className={`px-3 py-1.5 rounded-lg font-bold transition-all ${statusFilter === "inactive"
-                  ? "bg-red-500 text-white shadow-sm"
-                  : "text-gray-500 hover:text-gray-800"
-                }`}
             >
               Inactive ({companies.length - stats.active})
             </button>
           </div>
 
           {/* Sort Dropdown */}
-          <div className="relative">
-            <select
-              value={sortBy}
-              onChange={(e) => setSortBy(e.target.value)}
-              className="px-3.5 py-2.5 text-xs font-semibold bg-gray-50/80 border border-gray-200 rounded-xl text-gray-700 focus:outline-none focus:border-[#FD4B23] focus:bg-white cursor-pointer transition-colors"
-            >
-              <option value="newest">Sort: Newest First</option>
-              <option value="oldest">Sort: Oldest First</option>
-              <option value="name_asc">Name: A to Z</option>
-              <option value="name_desc">Name: Z to A</option>
-            </select>
-          </div>
+          <select
+            value={sortBy}
+            onChange={(e) => setSortBy(e.target.value)}
+            style={{
+              height: 38,
+              padding: "0 12px",
+              fontSize: 12,
+              fontWeight: 500,
+              fontFamily: "'Inter', system-ui, sans-serif",
+              backgroundColor: "#f9fafb",
+              border: "1px solid #e5e7eb",
+              borderRadius: 10,
+              color: "#374151",
+              outline: "none",
+              cursor: "pointer",
+            }}
+          >
+            <option value="newest">Sort: Newest First</option>
+            <option value="oldest">Sort: Oldest First</option>
+            <option value="name_asc">Name: A to Z</option>
+            <option value="name_desc">Name: Z to A</option>
+          </select>
 
-          {/* View Mode Toggle (Table / Grid) */}
-          <div className="inline-flex p-1 rounded-xl bg-gray-100/90 border border-gray-200">
+          {/* View Mode Switcher */}
+          <div style={{ display: "inline-flex", padding: 3, borderRadius: 10, backgroundColor: "#f3f4f6", border: "1px solid #e5e7eb" }}>
             <button
               onClick={() => setViewMode("table")}
-              className={`p-2 rounded-lg transition-all ${viewMode === "table"
-                  ? "bg-white text-[#FD4B23] shadow-sm"
-                  : "text-gray-400 hover:text-gray-700"
-                }`}
+              style={{
+                padding: "6px 8px",
+                borderRadius: 7,
+                border: "none",
+                cursor: "pointer",
+                backgroundColor: viewMode === "table" ? "#ffffff" : "transparent",
+                color: viewMode === "table" ? "#FD4B23" : "#9ca3af",
+                boxShadow: viewMode === "table" ? "0 1px 3px rgba(0,0,0,0.08)" : "none",
+                display: "flex",
+                alignItems: "center",
+              }}
               title="Table View"
             >
-              <List className="w-4 h-4" />
+              <List size={16} />
             </button>
             <button
               onClick={() => setViewMode("grid")}
-              className={`p-2 rounded-lg transition-all ${viewMode === "grid"
-                  ? "bg-white text-[#FD4B23] shadow-sm"
-                  : "text-gray-400 hover:text-gray-700"
-                }`}
-              title="Grid Cards View"
+              style={{
+                padding: "6px 8px",
+                borderRadius: 7,
+                border: "none",
+                cursor: "pointer",
+                backgroundColor: viewMode === "grid" ? "#ffffff" : "transparent",
+                color: viewMode === "grid" ? "#FD4B23" : "#9ca3af",
+                boxShadow: viewMode === "grid" ? "0 1px 3px rgba(0,0,0,0.08)" : "none",
+                display: "flex",
+                alignItems: "center",
+              }}
+              title="Grid View"
             >
-              <LayoutGrid className="w-4 h-4" />
+              <LayoutGrid size={16} />
             </button>
           </div>
         </div>
@@ -590,75 +761,115 @@ const CompanyMaster = () => {
 
       {/* Main Content Area */}
       {loading ? (
-        <div className="bg-white rounded-xl border border-gray-200/80 p-14 text-center">
-          <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-[#FFF0ED] text-[#FD4B23] mb-4 animate-bounce">
-            <Building2 className="w-7 h-7" />
+        <div style={{ backgroundColor: "#ffffff", borderRadius: 16, border: "1px solid #e5e7eb", padding: 60, textAlign: "center" }}>
+          <div style={{ width: 52, height: 52, borderRadius: 14, backgroundColor: "rgba(253,75,35,0.08)", color: "#FD4B23", margin: "0 auto 16px auto", display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <Building2 size={24} className="animate-spin" />
           </div>
-          <h3 className="text-base font-bold text-gray-900">Loading Enterprise Companies...</h3>
-          <p className="text-xs text-gray-400 mt-1">Retrieving database records and tax profiles</p>
+          <h3 style={{ fontSize: 16, fontWeight: 700, color: "#111827", margin: 0 }}>Loading Companies...</h3>
+          <p style={{ fontSize: 13, color: "#9ca3af", marginTop: 4 }}>Retrieving records from database</p>
         </div>
       ) : paginatedCompanies.length === 0 ? (
-        <div className="bg-white rounded-xl border border-gray-200/80 p-14 text-center">
-          <div className="w-16 h-16 rounded-2xl bg-gray-100 text-gray-400 mx-auto mb-4 flex items-center justify-center">
-            <Building2 className="w-8 h-8" />
+        <div style={{ backgroundColor: "#ffffff", borderRadius: 16, border: "1px solid #e5e7eb", padding: 60, textAlign: "center" }}>
+          <div style={{ width: 56, height: 56, borderRadius: 16, backgroundColor: "#f3f4f6", color: "#9ca3af", margin: "0 auto 16px auto", display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <Building2 size={28} />
           </div>
-          <h3 className="text-base font-bold text-gray-900">No Companies Found</h3>
-          <p className="text-xs text-gray-500 max-w-sm mx-auto mt-1.5 mb-6 leading-relaxed">
+          <h3 style={{ fontSize: 16, fontWeight: 700, color: "#111827", margin: 0 }}>No Companies Found</h3>
+          <p style={{ fontSize: 13, color: "#6b7280", maxWidth: 360, margin: "6px auto 20px auto", lineHeight: 1.5 }}>
             {search || statusFilter !== "all"
               ? "No company records matched your search query or filter settings."
-              : "No companies have been added yet. Click below to add your first company master record."}
+              : "No companies have been added yet. Click below to create your first company record."}
           </p>
           {search || statusFilter !== "all" ? (
             <button
-              onClick={() => {
-                setSearch("");
-                setStatusFilter("all");
+              onClick={() => { setSearch(""); setStatusFilter("all"); }}
+              style={{
+                height: 38,
+                padding: "0 16px",
+                borderRadius: 10,
+                backgroundColor: "#f3f4f6",
+                border: "1px solid #e5e7eb",
+                color: "#374151",
+                fontSize: 12,
+                fontWeight: 600,
+                cursor: "pointer",
               }}
-              className="btn-secondary text-xs px-4 py-2.5"
             >
               Reset Search & Filters
             </button>
           ) : (
-            <button onClick={handleOpenAddModal} className="btn-accent text-xs px-5 py-2.5">
-              <Plus className="w-4 h-4" />
+            <button
+              onClick={handleOpenAddModal}
+              style={{
+                height: 38,
+                padding: "0 18px",
+                borderRadius: 10,
+                border: "none",
+                background: "linear-gradient(135deg, #FD4B23 0%, #e5401e 100%)",
+                color: "#ffffff",
+                fontSize: 13,
+                fontWeight: 600,
+                cursor: "pointer",
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 8,
+              }}
+            >
+              <Plus size={16} />
               <span>Add Company</span>
             </button>
           )}
         </div>
       ) : viewMode === "table" ? (
         /* ENTERPRISE TABLE VIEW */
-        <div className="bg-white rounded-xl border border-gray-200/80 overflow-hidden">
-          <div className="overflow-x-auto custom-scrollbar">
-            <table className="w-full text-left border-collapse min-w-[880px]">
+        <div style={{ backgroundColor: "#ffffff", borderRadius: 16, border: "1px solid #e5e7eb", overflow: "hidden", boxShadow: "0 1px 3px rgba(0,0,0,0.02)" }}>
+          <div style={{ overflowX: "auto" }}>
+            <table style={{ width: "100%", borderCollapse: "collapse", textAlign: "left" }}>
               <thead>
-                <tr className="bg-[#F8FAFC] border-b border-gray-200/90 text-gray-500 text-[11px] font-bold uppercase tracking-wider">
-                  <th className="py-4 px-6">Company & Profile</th>
-                  <th className="py-4 px-6">GSTIN & State</th>
-                  <th className="py-4 px-6">Contact Info</th>
-                  <th className="py-4 px-6">Registered Address</th>
-                  <th className="py-4 px-6">Status</th>
-                  <th className="py-4 px-6 text-right">Actions</th>
+                <tr style={{ backgroundColor: "#f9fafb", borderBottom: "1px solid #e5e7eb", fontSize: 11, fontWeight: 700, color: "#6b7280", textTransform: "uppercase", letterSpacing: "0.05em" }}>
+                  <th style={{ padding: "14px 20px" }}>Company & Profile</th>
+                  <th style={{ padding: "14px 20px" }}>GSTIN & State</th>
+                  <th style={{ padding: "14px 20px" }}>Contact Info</th>
+                  <th style={{ padding: "14px 20px" }}>Address</th>
+                  <th style={{ padding: "14px 20px" }}>Status</th>
+                  <th style={{ padding: "14px 20px", textAlign: "right" }}>Actions</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-100 text-xs text-gray-700">
+              <tbody style={{ fontSize: 13, color: "#374151" }}>
                 {paginatedCompanies.map((company) => {
                   const gstState = getGSTState(company.gstNumber);
                   return (
                     <tr
                       key={company._id}
-                      className="hover:bg-slate-50/80 transition-colors group"
+                      style={{ borderBottom: "1px solid #f3f4f6", transition: "background-color 0.15s" }}
+                      onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "#f9fafb"}
+                      onMouseLeave={(e) => e.currentTarget.style.backgroundColor = "transparent"}
                     >
-                      {/* Company Name & Badge */}
-                      <td className="py-4 px-6">
-                        <div className="flex items-center gap-3.5">
-                          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#FD4B23] to-[#FFCE76] text-white flex items-center justify-center font-black text-sm shadow-md shadow-[#FD4B23]/15 flex-shrink-0">
+                      {/* Company Name & Avatar */}
+                      <td style={{ padding: "14px 20px" }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                          <div
+                            style={{
+                              width: 38,
+                              height: 38,
+                              borderRadius: 11,
+                              background: "linear-gradient(135deg, #FD4B23, #FF8A5C)",
+                              color: "#ffffff",
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              fontWeight: 700,
+                              fontSize: 14,
+                              flexShrink: 0,
+                              boxShadow: "0 2px 8px rgba(253,75,35,0.2)",
+                            }}
+                          >
                             {company.name ? company.name.charAt(0).toUpperCase() : "C"}
                           </div>
-                          <div className="min-w-0">
-                            <div className="font-bold text-gray-900 text-sm group-hover:text-[#FD4B23] transition-colors truncate">
+                          <div style={{ minWidth: 0 }}>
+                            <div style={{ fontWeight: 600, color: "#111827", fontSize: 14, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                               {company.name}
                             </div>
-                            <span className="text-[10px] font-medium text-gray-400">
+                            <span style={{ fontSize: 10, color: "#9ca3af" }}>
                               Added {new Date(company.createdAt).toLocaleDateString()}
                             </span>
                           </div>
@@ -666,119 +877,122 @@ const CompanyMaster = () => {
                       </td>
 
                       {/* GSTIN & State */}
-                      <td className="py-4 px-6">
+                      <td style={{ padding: "14px 20px" }}>
                         {company.gstNumber ? (
-                          <div className="space-y-1.5">
-                            <div className="flex items-center gap-1.5">
-                              <span className="font-mono font-bold text-gray-800 text-xs bg-gray-100 px-2.5 py-1 rounded-lg border border-gray-200/80">
+                          <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                            <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                              <span style={{ fontFamily: "monospace", fontWeight: 700, fontSize: 12, color: "#1f2937", backgroundColor: "#f3f4f6", padding: "2px 8px", borderRadius: 6, border: "1px solid #e5e7eb" }}>
                                 {company.gstNumber}
                               </span>
                               <button
                                 onClick={() => copyToClipboard(company.gstNumber, "GSTIN")}
-                                className="p-1 text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded-md transition-colors"
+                                style={{ background: "none", border: "none", color: "#9ca3af", cursor: "pointer", padding: 2 }}
                                 title="Copy GSTIN"
                               >
-                                <Copy className="w-3.5 h-3.5" />
+                                <Copy size={13} />
                               </button>
                             </div>
                             {gstState && (
-                              <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200/80">
-                                <ShieldCheck className="w-3 h-3" />
+                              <span style={{ fontSize: 10, fontWeight: 600, color: "#15803d", backgroundColor: "#f0fdf4", padding: "1px 8px", borderRadius: 12, width: "fit-content", border: "1px solid #bbf7d0" }}>
                                 {gstState}
                               </span>
                             )}
                           </div>
                         ) : (
-                          <span className="text-gray-400 italic font-medium">Unregistered</span>
+                          <span style={{ color: "#9ca3af", fontStyle: "italic", fontSize: 12 }}>Unregistered</span>
                         )}
                       </td>
 
                       {/* Contact Info */}
-                      <td className="py-4 px-6">
-                        <div className="space-y-1.5">
+                      <td style={{ padding: "14px 20px" }}>
+                        <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
                           {company.email && (
-                            <div className="flex items-center gap-1.5 text-gray-600">
-                              <Mail className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" />
-                              <a
-                                href={`mailto:${company.email}`}
-                                className="hover:underline hover:text-[#FD4B23] truncate max-w-[190px]"
-                              >
+                            <div style={{ display: "flex", alignItems: "center", gap: 6, color: "#4b5563" }}>
+                              <Mail size={13} color="#9ca3af" />
+                              <a href={`mailto:${company.email}`} style={{ color: "#2563eb", textDecoration: "none" }} className="hover:underline">
                                 {company.email}
                               </a>
-                              <button
-                                onClick={() => copyToClipboard(company.email, "Email")}
-                                className="p-0.5 text-gray-400 hover:text-gray-600 rounded"
-                                title="Copy Email"
-                              >
-                                <Copy className="w-3 h-3" />
-                              </button>
                             </div>
                           )}
                           {company.phone && (
-                            <div className="flex items-center gap-1.5 text-gray-600 font-mono">
-                              <Phone className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" />
+                            <div style={{ display: "flex", alignItems: "center", gap: 6, color: "#4b5563", fontFamily: "monospace" }}>
+                              <Phone size={13} color="#9ca3af" />
                               <span>{company.phone}</span>
                             </div>
                           )}
                           {!company.email && !company.phone && (
-                            <span className="text-gray-400 italic">No contact info</span>
+                            <span style={{ color: "#9ca3af", fontStyle: "italic" }}>No contact info</span>
                           )}
                         </div>
                       </td>
 
-                      {/* Registered Address */}
-                      <td className="py-4 px-6">
+                      {/* Address */}
+                      <td style={{ padding: "14px 20px" }}>
                         {company.address ? (
-                          <div className="flex items-start gap-1.5 text-gray-600 max-w-[220px]">
-                            <MapPin className="w-3.5 h-3.5 text-gray-400 mt-0.5 flex-shrink-0" />
-                            <span className="line-clamp-2 leading-relaxed">{company.address}</span>
+                          <div style={{ display: "flex", alignItems: "flex-start", gap: 6, color: "#4b5563", maxWidth: 220 }}>
+                            <MapPin size={13} color="#9ca3af" style={{ flexShrink: 0, marginTop: 2 }} />
+                            <span style={{ display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden", lineHeight: 1.4 }}>
+                              {company.address}
+                            </span>
                           </div>
                         ) : (
-                          <span className="text-gray-400 italic">—</span>
+                          <span style={{ color: "#9ca3af" }}>—</span>
                         )}
                       </td>
 
                       {/* Status */}
-                      <td className="py-4 px-6">
+                      <td style={{ padding: "14px 20px" }}>
                         <button
                           onClick={() => handleToggleStatus(company)}
-                          className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold transition-all cursor-pointer ${company.status === "inactive"
-                              ? "bg-red-50 text-red-600 border border-red-200 hover:bg-red-100"
-                              : "bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100"
-                            }`}
-                          title="Click to toggle status"
+                          style={{
+                            display: "inline-flex",
+                            alignItems: "center",
+                            gap: 6,
+                            padding: "3px 10px",
+                            borderRadius: 20,
+                            fontSize: 11,
+                            fontWeight: 600,
+                            border: company.status === "inactive" ? "1px solid #fecaca" : "1px solid #bbf7d0",
+                            backgroundColor: company.status === "inactive" ? "#fef2f2" : "#f0fdf4",
+                            color: company.status === "inactive" ? "#dc2626" : "#16a34a",
+                            cursor: "pointer",
+                          }}
+                          title="Toggle status"
                         >
-                          <span
-                            className={`w-1.5 h-1.5 rounded-full ${company.status === "inactive" ? "bg-red-500" : "bg-emerald-500"
-                              }`}
-                          ></span>
+                          <span style={{ width: 6, height: 6, borderRadius: "50%", backgroundColor: company.status === "inactive" ? "#ef4444" : "#22c55e" }} />
                           <span>{company.status === "inactive" ? "Inactive" : "Active"}</span>
                         </button>
                       </td>
 
                       {/* Actions */}
-                      <td className="py-4 px-6 text-right">
-                        <div className="inline-flex items-center justify-end gap-1">
+                      <td style={{ padding: "14px 20px", textAlign: "right" }}>
+                        <div style={{ display: "inline-flex", itemsCenter: "center", gap: 4 }}>
                           <button
                             onClick={() => setInspectCompany(company)}
-                            className="p-2 rounded-xl text-gray-500 hover:text-blue-600 hover:bg-blue-50 transition-colors"
+                            style={{ width: 30, height: 30, borderRadius: 8, border: "none", backgroundColor: "transparent", color: "#6b7280", cursor: "pointer", display: "flex", alignItems: "center", justifyCenter: "center", justifyContent: "center" }}
+                            onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = "#eff6ff"; e.currentTarget.style.color = "#2563eb"; }}
+                            onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = "transparent"; e.currentTarget.style.color = "#6b7280"; }}
                             title="Inspect Details"
                           >
-                            <Eye className="w-4 h-4" />
+                            <Eye size={15} />
                           </button>
                           <button
                             onClick={() => handleEdit(company)}
-                            className="p-2 rounded-xl text-gray-500 hover:text-[#FD4B23] hover:bg-[#FFF0ED] transition-colors"
+                            style={{ width: 30, height: 30, borderRadius: 8, border: "none", backgroundColor: "transparent", color: "#6b7280", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}
+                            onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = "rgba(253,75,35,0.08)"; e.currentTarget.style.color = "#FD4B23"; }}
+                            onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = "transparent"; e.currentTarget.style.color = "#6b7280"; }}
                             title="Edit Company"
                           >
-                            <Edit2 className="w-4 h-4" />
+                            <Edit2 size={15} />
                           </button>
                           <button
                             onClick={() => setDeleteTarget(company)}
-                            className="p-2 rounded-xl text-gray-500 hover:text-red-600 hover:bg-red-50 transition-colors"
+                            style={{ width: 30, height: 30, borderRadius: 8, border: "none", backgroundColor: "transparent", color: "#6b7280", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}
+                            onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = "#fef2f2"; e.currentTarget.style.color = "#ef4444"; }}
+                            onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = "transparent"; e.currentTarget.style.color = "#6b7280"; }}
                             title="Delete Company"
                           >
-                            <Trash2 className="w-4 h-4" />
+                            <Trash2 size={15} />
                           </button>
                         </div>
                       </td>
@@ -791,27 +1005,58 @@ const CompanyMaster = () => {
         </div>
       ) : (
         /* CARDS GRID VIEW */
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: 16 }}>
           {paginatedCompanies.map((company) => {
             const gstState = getGSTState(company.gstNumber);
             return (
               <div
                 key={company._id}
-                className="bg-white rounded-2xl border border-gray-200/80 p-5 hover:shadow-lg hover:border-[#FD4B23]/20 transition-all duration-300 flex flex-col justify-between group"
+                style={{
+                  backgroundColor: "#ffffff",
+                  borderRadius: 16,
+                  border: "1px solid #e5e7eb",
+                  padding: 20,
+                  display: "flex",
+                  flexDirection: "column",
+                  justifyContent: "space-between",
+                  transition: "box-shadow 0.2s, border-color 0.2s",
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.borderColor = "rgba(253,75,35,0.3)";
+                  e.currentTarget.style.boxShadow = "0 10px 25px -5px rgba(0,0,0,0.05)";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.borderColor = "#e5e7eb";
+                  e.currentTarget.style.boxShadow = "none";
+                }}
               >
                 <div>
-                  {/* Top Row: Avatar, Name & Status */}
-                  <div className="flex items-start justify-between gap-3 mb-4">
-                    <div className="flex items-center gap-3 min-w-0">
-                      <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-[#FD4B23] to-[#FFCE76] text-white flex items-center justify-center font-black text-lg shadow-md shadow-[#FD4B23]/20 flex-shrink-0">
+                  <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 10, marginBottom: 14 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                      <div
+                        style={{
+                          width: 42,
+                          height: 42,
+                          borderRadius: 12,
+                          background: "linear-gradient(135deg, #FD4B23, #FF8A5C)",
+                          color: "#ffffff",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          fontWeight: 700,
+                          fontSize: 16,
+                          flexShrink: 0,
+                          boxShadow: "0 2px 8px rgba(253,75,35,0.2)",
+                        }}
+                      >
                         {company.name ? company.name.charAt(0).toUpperCase() : "C"}
                       </div>
-                      <div className="min-w-0">
-                        <h3 className="font-extrabold text-gray-900 text-base group-hover:text-[#FD4B23] transition-colors truncate">
+                      <div style={{ minWidth: 0 }}>
+                        <h3 style={{ fontSize: 15, fontWeight: 700, color: "#111827", margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                           {company.name}
                         </h3>
                         {gstState && (
-                          <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200 inline-block mt-0.5">
+                          <span style={{ fontSize: 10, fontWeight: 600, color: "#15803d", backgroundColor: "#f0fdf4", padding: "1px 8px", borderRadius: 12, display: "inline-block", marginTop: 3 }}>
                             {gstState}
                           </span>
                         )}
@@ -820,67 +1065,62 @@ const CompanyMaster = () => {
 
                     <button
                       onClick={() => handleToggleStatus(company)}
-                      className={`px-2.5 py-1 rounded-full text-[10px] font-bold border transition-colors flex-shrink-0 ${company.status === "inactive"
-                          ? "bg-red-50 text-red-600 border-red-200"
-                          : "bg-emerald-50 text-emerald-700 border-emerald-200"
-                        }`}
+                      style={{
+                        padding: "2px 8px",
+                        borderRadius: 12,
+                        fontSize: 10,
+                        fontWeight: 600,
+                        border: company.status === "inactive" ? "1px solid #fecaca" : "1px solid #bbf7d0",
+                        backgroundColor: company.status === "inactive" ? "#fef2f2" : "#f0fdf4",
+                        color: company.status === "inactive" ? "#dc2626" : "#16a34a",
+                        cursor: "pointer",
+                      }}
                     >
                       {company.status === "inactive" ? "Inactive" : "Active"}
                     </button>
                   </div>
 
-                  {/* Info Divider Lines */}
-                  <div className="space-y-3 text-xs py-3 border-t border-b border-gray-100 my-4">
-                    <div className="flex items-center justify-between">
-                      <span className="text-gray-400 font-medium">GSTIN</span>
-                      <span className="font-mono font-bold text-gray-800 bg-gray-50 px-2.5 py-1 rounded-lg border border-gray-200">
+                  <div style={{ display: "flex", flexDirection: "column", gap: 8, padding: "12px 0", borderTop: "1px solid #f3f4f6", borderBottom: "1px solid #f3f4f6", margin: "12px 0", fontSize: 12 }}>
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                      <span style={{ color: "#9ca3af" }}>GSTIN</span>
+                      <span style={{ fontFamily: "monospace", fontWeight: 700, color: "#1f2937", backgroundColor: "#f3f4f6", padding: "2px 6px", borderRadius: 4 }}>
                         {company.gstNumber || "Unregistered"}
                       </span>
                     </div>
-
-                    <div className="flex items-center justify-between">
-                      <span className="text-gray-400 font-medium">Phone</span>
-                      <span className="font-mono text-gray-700">{company.phone || "—"}</span>
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                      <span style={{ color: "#9ca3af" }}>Phone</span>
+                      <span style={{ fontFamily: "monospace", color: "#374151" }}>{company.phone || "—"}</span>
                     </div>
-
-                    <div className="flex items-center justify-between">
-                      <span className="text-gray-400 font-medium">Email</span>
-                      <span className="text-gray-700 truncate max-w-[180px]">{company.email || "—"}</span>
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                      <span style={{ color: "#9ca3af" }}>Email</span>
+                      <span style={{ color: "#374151", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: 160 }}>{company.email || "—"}</span>
                     </div>
-
-                    {company.address && (
-                      <div className="flex items-start gap-1.5 pt-1 text-gray-500">
-                        <MapPin className="w-3.5 h-3.5 text-gray-400 mt-0.5 flex-shrink-0" />
-                        <span className="line-clamp-2 leading-relaxed">{company.address}</span>
-                      </div>
-                    )}
                   </div>
                 </div>
 
-                {/* Card Action Footer */}
-                <div className="flex items-center justify-between pt-2">
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", paddingTop: 4 }}>
                   <button
                     onClick={() => setInspectCompany(company)}
-                    className="inline-flex items-center gap-1.5 text-xs font-bold text-blue-600 hover:text-blue-800 transition-colors"
+                    style={{ background: "none", border: "none", color: "#2563eb", fontSize: 12, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: 4 }}
                   >
-                    <Eye className="w-3.5 h-3.5" />
+                    <Eye size={14} />
                     <span>Quick View</span>
                   </button>
 
-                  <div className="flex items-center gap-1">
+                  <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
                     <button
                       onClick={() => handleEdit(company)}
-                      className="p-2 rounded-xl text-gray-500 hover:text-[#FD4B23] hover:bg-[#FFF0ED] transition-colors"
+                      style={{ width: 30, height: 30, borderRadius: 8, border: "none", backgroundColor: "transparent", color: "#6b7280", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}
                       title="Edit"
                     >
-                      <Edit2 className="w-4 h-4" />
+                      <Edit2 size={15} />
                     </button>
                     <button
                       onClick={() => setDeleteTarget(company)}
-                      className="p-2 rounded-xl text-gray-500 hover:text-red-600 hover:bg-red-50 transition-colors"
+                      style={{ width: 30, height: 30, borderRadius: 8, border: "none", backgroundColor: "transparent", color: "#6b7280", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}
                       title="Delete"
                     >
-                      <Trash2 className="w-4 h-4" />
+                      <Trash2 size={15} />
                     </button>
                   </div>
                 </div>
@@ -890,224 +1130,271 @@ const CompanyMaster = () => {
         </div>
       )}
 
-      {/* Pagination Footer Controls */}
-      <div className="bg-white p-3.5 rounded-xl border border-gray-200/80 flex flex-col sm:flex-row items-center justify-between gap-3">
-        <span className="text-xs font-semibold text-gray-500">
+      {/* Pagination Footer */}
+      <div
+        style={{
+          backgroundColor: "#ffffff",
+          borderRadius: 16,
+          padding: "12px 18px",
+          border: "1px solid #e5e7eb",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          gap: 12,
+          flexWrap: "wrap",
+        }}
+      >
+        <span style={{ fontSize: 12, fontWeight: 500, color: "#6b7280" }}>
           Showing {paginatedCompanies.length} of {filteredCompanies.length} records (Page {page} of {computedTotalPages})
         </span>
 
-        <div className="flex items-center gap-2">
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
           <button
             onClick={() => setPage((prev) => Math.max(prev - 1, 1))}
             disabled={page === 1}
-            className="btn-secondary text-xs px-3.5 py-1.5 disabled:opacity-40 disabled:cursor-not-allowed"
+            style={{
+              height: 32,
+              padding: "0 14px",
+              borderRadius: 8,
+              backgroundColor: "#ffffff",
+              border: "1px solid #e5e7eb",
+              color: "#374151",
+              fontSize: 12,
+              fontWeight: 600,
+              cursor: page === 1 ? "not-allowed" : "pointer",
+              opacity: page === 1 ? 0.4 : 1,
+            }}
           >
             Previous
           </button>
 
-          <span className="px-3.5 py-1.5 text-xs font-bold text-gray-800 bg-gray-50 border border-gray-200 rounded-lg">
+          <span style={{ fontSize: 12, fontWeight: 600, color: "#111827", padding: "0 8px" }}>
             {page} / {computedTotalPages}
           </span>
 
           <button
             onClick={() => setPage((prev) => Math.min(prev + 1, computedTotalPages))}
             disabled={page === computedTotalPages || computedTotalPages === 0}
-            className="btn-secondary text-xs px-3.5 py-1.5 disabled:opacity-40 disabled:cursor-not-allowed"
+            style={{
+              height: 32,
+              padding: "0 14px",
+              borderRadius: 8,
+              backgroundColor: "#ffffff",
+              border: "1px solid #e5e7eb",
+              color: "#374151",
+              fontSize: 12,
+              fontWeight: 600,
+              cursor: (page === computedTotalPages || computedTotalPages === 0) ? "not-allowed" : "pointer",
+              opacity: (page === computedTotalPages || computedTotalPages === 0) ? 0.4 : 1,
+            }}
           >
             Next
           </button>
         </div>
       </div>
 
-      {/* SLIDE-OVER INSPECTION DRAWER */}
-      {inspectCompany && (
-        <div className="fixed inset-0 z-50 overflow-hidden animate-fade-in">
-          <div
-            className="absolute inset-0 bg-black/50 backdrop-blur-xs transition-opacity"
-            onClick={() => setInspectCompany(null)}
-          ></div>
+      {/* INSPECTION SLIDE-OVER DRAWER */}
+      <AnimatePresence>
+        {inspectCompany && (
+          <div style={{ position: "fixed", inset: 0, zIndex: 60, overflow: "hidden" }}>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              style={{ position: "absolute", inset: 0, backgroundColor: "rgba(0,0,0,0.5)", backdropFilter: "blur(4px)" }}
+              onClick={() => setInspectCompany(null)}
+            />
 
-          <div className="fixed inset-y-0 right-0 max-w-full flex pl-10">
-            <div className="w-screen max-w-md bg-white border-l border-gray-200 shadow-2xl flex flex-col justify-between animate-slide-down">
+            <motion.div
+              initial={{ x: "100%" }}
+              animate={{ x: 0 }}
+              exit={{ x: "100%" }}
+              transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
+              style={{
+                position: "fixed",
+                top: 0,
+                bottom: 0,
+                right: 0,
+                width: "100%",
+                maxWidth: 440,
+                backgroundColor: "#ffffff",
+                boxShadow: "-10px 0 30px rgba(0,0,0,0.15)",
+                display: "flex",
+                flexDirection: "column",
+                zIndex: 61,
+              }}
+            >
               {/* Drawer Header */}
-              <div className="p-6 bg-gradient-to-r from-[#131313] to-[#1F1F1F] text-white flex items-center justify-between border-b border-white/10">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-[#FD4B23] text-white flex items-center justify-center font-black text-base shadow-md">
+              <div style={{ padding: "20px 24px", background: "linear-gradient(180deg, #111113 0%, #1a1a1e 100%)", color: "#ffffff", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                  <div style={{ width: 40, height: 40, borderRadius: 12, background: "linear-gradient(135deg, #FD4B23, #e5401e)", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700, fontSize: 16 }}>
                     {inspectCompany.name ? inspectCompany.name.charAt(0).toUpperCase() : "C"}
                   </div>
                   <div>
-                    <h3 className="font-extrabold text-base line-clamp-1">{inspectCompany.name}</h3>
-                    <span className="text-[10px] text-gray-400">Enterprise Company Inspection</span>
+                    <h3 style={{ fontSize: 16, fontWeight: 700, margin: 0 }}>{inspectCompany.name}</h3>
+                    <span style={{ fontSize: 11, color: "#9ca3af" }}>Enterprise Company Profile</span>
                   </div>
                 </div>
-                <button
-                  onClick={() => setInspectCompany(null)}
-                  className="p-1.5 rounded-xl text-gray-400 hover:text-white hover:bg-white/10"
-                >
-                  <X className="w-5 h-5" />
+                <button onClick={() => setInspectCompany(null)} style={{ background: "none", border: "none", color: "#9ca3af", cursor: "pointer", padding: 4 }}>
+                  <X size={20} />
                 </button>
               </div>
 
-              {/* Drawer Content Body */}
-              <div className="p-6 space-y-6 overflow-y-auto flex-1 text-xs custom-scrollbar">
-                {/* Account Status Card */}
-                <div className="flex items-center justify-between p-4 rounded-2xl bg-gray-50 border border-gray-200">
-                  <span className="font-bold text-gray-700">Account Health</span>
-                  <span
-                    className={`px-3 py-1 rounded-full text-xs font-bold ${inspectCompany.status === "inactive"
-                        ? "bg-red-50 text-red-600 border border-red-200"
-                        : "bg-emerald-50 text-emerald-700 border border-emerald-200"
-                      }`}
-                  >
+              {/* Drawer Body */}
+              <div style={{ padding: 24, display: "flex", flexDirection: "column", gap: 20, overflowY: "auto", flex: 1, fontSize: 13 }}>
+                {/* Status Card */}
+                <div style={{ display: "flex", alignItems: "center", justifyBetween: "space-between", justifyContent: "space-between", padding: "14px 16px", borderRadius: 12, backgroundColor: "#f9fafb", border: "1px solid #e5e7eb" }}>
+                  <span style={{ fontWeight: 600, color: "#374151" }}>Account Health</span>
+                  <span style={{ padding: "3px 10px", borderRadius: 20, fontSize: 11, fontWeight: 600, backgroundColor: inspectCompany.status === "inactive" ? "#fef2f2" : "#f0fdf4", color: inspectCompany.status === "inactive" ? "#dc2626" : "#16a34a", border: inspectCompany.status === "inactive" ? "1px solid #fecaca" : "1px solid #bbf7d0" }}>
                     {inspectCompany.status === "inactive" ? "Inactive" : "Active Operating"}
                   </span>
                 </div>
 
-                {/* Tax Profile */}
-                <div className="space-y-3">
-                  <h4 className="font-extrabold text-gray-900 uppercase tracking-wider text-[11px] text-[#FD4B23] flex items-center gap-1.5">
-                    <ShieldCheck className="w-4 h-4" />
+                {/* Tax Registration */}
+                <div>
+                  <h4 style={{ fontSize: 11, fontWeight: 700, color: "#FD4B23", textTransform: "uppercase", letterSpacing: "0.05em", margin: "0 0 10px 0", display: "flex", alignItems: "center", gap: 6 }}>
+                    <ShieldCheck size={15} />
                     Tax Registration
                   </h4>
-
-                  <div className="p-4 rounded-2xl bg-white border border-gray-200 space-y-3 shadow-xs">
-                    <div className="flex justify-between items-center">
-                      <span className="text-gray-500 font-medium">GSTIN</span>
-                      {inspectCompany.gstNumber ? (
-                        <div className="flex items-center gap-1.5">
-                          <span className="font-mono font-bold text-gray-900 bg-gray-100 px-2 py-0.5 rounded border border-gray-200">
-                            {inspectCompany.gstNumber}
-                          </span>
-                          <button
-                            onClick={() => copyToClipboard(inspectCompany.gstNumber, "GSTIN")}
-                            className="p-1 text-gray-400 hover:text-gray-700"
-                            title="Copy"
-                          >
-                            <Copy className="w-3.5 h-3.5" />
-                          </button>
-                        </div>
-                      ) : (
-                        <span className="text-gray-400 italic">Not Provided</span>
-                      )}
-                    </div>
-
-                    <div className="flex justify-between items-center">
-                      <span className="text-gray-500 font-medium">State / Region</span>
-                      <span className="font-semibold text-gray-800">
-                        {getGSTState(inspectCompany.gstNumber) || "India"}
+                  <div style={{ padding: 16, borderRadius: 12, backgroundColor: "#ffffff", border: "1px solid #e5e7eb", display: "flex", flexDirection: "column", gap: 10 }}>
+                    <div style={{ display: "flex", justifyBetween: "space-between", justifyContent: "space-between", alignItems: "center" }}>
+                      <span style={{ color: "#6b7280" }}>GSTIN</span>
+                      <span style={{ fontFamily: "monospace", fontWeight: 700, color: "#111827", backgroundColor: "#f3f4f6", padding: "2px 8px", borderRadius: 6 }}>
+                        {inspectCompany.gstNumber || "Unregistered"}
                       </span>
+                    </div>
+                    <div style={{ display: "flex", justifyBetween: "space-between", justifyContent: "space-between", alignItems: "center" }}>
+                      <span style={{ color: "#6b7280" }}>State / Region</span>
+                      <span style={{ fontWeight: 600, color: "#111827" }}>{getGSTState(inspectCompany.gstNumber) || "India"}</span>
                     </div>
                   </div>
                 </div>
 
-                {/* Contact Information */}
-                <div className="space-y-3">
-                  <h4 className="font-extrabold text-gray-900 uppercase tracking-wider text-[11px] text-[#FD4B23] flex items-center gap-1.5">
-                    <Phone className="w-4 h-4" />
+                {/* Contact Info */}
+                <div>
+                  <h4 style={{ fontSize: 11, fontWeight: 700, color: "#FD4B23", textTransform: "uppercase", letterSpacing: "0.05em", margin: "0 0 10px 0", display: "flex", alignItems: "center", gap: 6 }}>
+                    <Phone size={15} />
                     Contact Information
                   </h4>
-
-                  <div className="p-4 rounded-2xl bg-white border border-gray-200 space-y-3 shadow-xs">
-                    <div className="flex items-center justify-between">
-                      <span className="text-gray-500 font-medium">Email</span>
-                      {inspectCompany.email ? (
-                        <a
-                          href={`mailto:${inspectCompany.email}`}
-                          className="font-semibold text-blue-600 hover:underline"
-                        >
-                          {inspectCompany.email}
-                        </a>
-                      ) : (
-                        <span className="text-gray-400 italic">—</span>
-                      )}
+                  <div style={{ padding: 16, borderRadius: 12, backgroundColor: "#ffffff", border: "1px solid #e5e7eb", display: "flex", flexDirection: "column", gap: 10 }}>
+                    <div style={{ display: "flex", justifyBetween: "space-between", justifyContent: "space-between", alignItems: "center" }}>
+                      <span style={{ color: "#6b7280" }}>Email</span>
+                      <span style={{ fontWeight: 600, color: "#2563eb" }}>{inspectCompany.email || "—"}</span>
                     </div>
-
-                    <div className="flex items-center justify-between">
-                      <span className="text-gray-500 font-medium">Phone</span>
-                      <span className="font-mono font-semibold text-gray-900">
-                        {inspectCompany.phone || "—"}
-                      </span>
+                    <div style={{ display: "flex", justifyBetween: "space-between", justifyContent: "space-between", alignItems: "center" }}>
+                      <span style={{ color: "#6b7280" }}>Phone</span>
+                      <span style={{ fontFamily: "monospace", fontWeight: 600, color: "#111827" }}>{inspectCompany.phone || "—"}</span>
                     </div>
-
-                    <div className="pt-2 border-t border-gray-100">
-                      <span className="text-gray-500 font-medium block mb-1">Address</span>
-                      <p className="text-gray-800 font-medium leading-relaxed">
-                        {inspectCompany.address || "No address specified."}
-                      </p>
+                    <div style={{ paddingTop: 8, borderTop: "1px solid #f3f4f6" }}>
+                      <span style={{ color: "#6b7280", display: "block", marginBottom: 4 }}>Address</span>
+                      <p style={{ color: "#374151", margin: 0, lineHeight: 1.5 }}>{inspectCompany.address || "No address specified."}</p>
                     </div>
                   </div>
                 </div>
 
-                {/* Audit Information */}
-                <div className="space-y-2 pt-3 border-t border-gray-100 text-[11px] text-gray-400">
-                  <div className="flex justify-between">
-                    <span>Created Date:</span>
+                {/* Timestamps */}
+                <div style={{ paddingTop: 12, borderTop: "1px solid #f3f4f6", fontSize: 11, color: "#9ca3af", display: "flex", flexDirection: "column", gap: 4 }}>
+                  <div style={{ display: "flex", justifyContent: "space-between" }}>
+                    <span>Created:</span>
                     <span>{new Date(inspectCompany.createdAt).toLocaleString()}</span>
                   </div>
-                  <div className="flex justify-between">
-                    <span>Last Updated:</span>
+                  <div style={{ display: "flex", justifyContent: "space-between" }}>
+                    <span>Updated:</span>
                     <span>{new Date(inspectCompany.updatedAt).toLocaleString()}</span>
                   </div>
                 </div>
               </div>
 
               {/* Drawer Actions */}
-              <div className="p-6 bg-gray-50 border-t border-gray-200 flex items-center justify-between gap-3">
+              <div style={{ padding: "16px 24px", backgroundColor: "#f9fafb", borderTop: "1px solid #e5e7eb", display: "flex", gap: 10 }}>
                 <button
-                  onClick={() => {
-                    const comp = inspectCompany;
-                    setInspectCompany(null);
-                    handleEdit(comp);
+                  onClick={() => { const comp = inspectCompany; setInspectCompany(null); handleEdit(comp); }}
+                  style={{
+                    flex: 1,
+                    height: 38,
+                    borderRadius: 10,
+                    border: "none",
+                    background: "linear-gradient(135deg, #FD4B23 0%, #e5401e 100%)",
+                    color: "#fff",
+                    fontSize: 12,
+                    fontWeight: 600,
+                    cursor: "pointer",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    gap: 6,
                   }}
-                  className="btn-accent text-xs flex-1 py-2.5"
                 >
-                  <Edit2 className="w-4 h-4" />
+                  <Edit2 size={14} />
                   <span>Edit Profile</span>
                 </button>
                 <button
-                  onClick={() => {
-                    const comp = inspectCompany;
-                    setInspectCompany(null);
-                    setDeleteTarget(comp);
-                  }}
-                  className="p-2.5 rounded-xl border border-red-200 bg-red-50 text-red-600 hover:bg-red-100 transition-colors"
+                  onClick={() => { const comp = inspectCompany; setInspectCompany(null); setDeleteTarget(comp); }}
+                  style={{ width: 38, height: 38, borderRadius: 10, border: "1px solid #fecaca", backgroundColor: "#fef2f2", color: "#dc2626", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}
                   title="Delete Company"
                 >
-                  <Trash2 className="w-4 h-4" />
+                  <Trash2 size={14} />
                 </button>
               </div>
-            </div>
+            </motion.div>
           </div>
-        </div>
-      )}
+        )}
+      </AnimatePresence>
 
       {/* CREATE & EDIT FORM MODAL */}
-      {showModal && (
-        <div className="fixed inset-0 bg-slate-950/60 backdrop-blur-xs flex items-start sm:items-center justify-center z-50 p-3 sm:p-6 pt-6 sm:pt-8 overflow-y-auto animate-fade-in">
-          <div className="bg-white w-full max-w-2xl sm:max-w-3xl rounded-2xl shadow-2xl border border-slate-200/90 overflow-hidden animate-scale-in my-auto max-h-[85vh] flex flex-col">
-            {/* Modal Header */}
-            <div className="flex items-center justify-between px-7 py-5 border-b border-slate-200 bg-white flex-shrink-0">
-              <div>
-                <h3 className="text-lg font-bold text-slate-900 tracking-tight">{isEditing ? "Edit Company Profile" : "Add Enterprise Company"}</h3>
-                <p className="text-xs text-slate-500 mt-1">Configure tax profiles and corporate contact information</p>
+      <AnimatePresence>
+        {showModal && (
+          <div style={{ position: "fixed", inset: 0, zIndex: 60, display: "flex", alignItems: "center", justifyCenter: "center", justifyContent: "center", padding: 16 }}>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              style={{ position: "absolute", inset: 0, backgroundColor: "rgba(0,0,0,0.5)", backdropFilter: "blur(4px)" }}
+              onClick={handleCloseModal}
+            />
+
+            <motion.div
+              initial={{ opacity: 0, scale: 0.96, y: 10 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.96, y: 10 }}
+              transition={{ duration: 0.2, ease: "easeOut" }}
+              style={{
+                position: "relative",
+                width: "100%",
+                maxWidth: 600,
+                maxHeight: "90vh",
+                backgroundColor: "#ffffff",
+                borderRadius: 20,
+                boxShadow: "0 25px 50px -12px rgba(0,0,0,0.25)",
+                border: "1px solid #e5e7eb",
+                overflow: "hidden",
+                display: "flex",
+                flexDirection: "column",
+                zIndex: 61,
+              }}
+            >
+              {/* Modal Header */}
+              <div style={{ padding: "18px 24px", borderBottom: "1px solid #f3f4f6", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                <div>
+                  <h3 style={{ fontSize: 17, fontWeight: 700, color: "#111827", margin: 0 }}>
+                    {isEditing ? "Edit Company Profile" : "Add Enterprise Company"}
+                  </h3>
+                  <p style={{ fontSize: 12, color: "#6b7280", margin: "2px 0 0 0" }}>
+                    Configure corporate details, contact information, and tax profiles.
+                  </p>
+                </div>
+                <button onClick={handleCloseModal} style={{ background: "none", border: "none", color: "#9ca3af", cursor: "pointer", padding: 4 }}>
+                  <X size={18} />
+                </button>
               </div>
-              <button onClick={handleCloseModal} className="p-2 rounded-xl text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors"><X className="w-5 h-5" /></button>
-            </div>
 
-            {/* Modal Form Body */}
-            <form onSubmit={handleSubmit} className="flex flex-col flex-1 overflow-hidden">
-              <div className="p-7 space-y-6 text-xs overflow-y-auto flex-1 custom-scrollbar">
-
-                {/* Section 1: Company Profile Card */}
-                <div className="p-5 rounded-xl border border-slate-200/80 bg-slate-50/40 space-y-4">
-                  <div className="text-xs font-bold uppercase tracking-wider text-slate-700 pb-2 border-b border-slate-200/80 flex items-center gap-2">
-                    <span className="w-2 h-2 rounded-full bg-[#FD4B23]"></span>
-                    <span>Corporate Identity</span>
-                  </div>
+              {/* Modal Body */}
+              <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", flex: 1, overflow: "hidden" }}>
+                <div style={{ padding: 24, display: "flex", flexDirection: "column", gap: 16, overflowY: "auto", flex: 1, fontSize: 13 }}>
+                  {/* Company Name */}
                   <div>
-                    <label className="form-label">
-                      <span>Company Name</span>
-                      <span className="form-label-req">*</span>
+                    <label style={{ fontSize: 11, fontWeight: 600, color: "#374151", textTransform: "uppercase", letterSpacing: "0.05em", display: "block", marginBottom: 6 }}>
+                      Company Name <span style={{ color: "#ef4444" }}>*</span>
                     </label>
                     <input
                       type="text"
@@ -1115,84 +1402,168 @@ const CompanyMaster = () => {
                       required
                       value={formData.name}
                       onChange={handleInputChange}
-                      className="input-field font-medium text-sm"
                       placeholder="e.g. Lalit Solar Energy Pvt Ltd"
+                      style={{
+                        width: "100%",
+                        height: 42,
+                        padding: "0 14px",
+                        fontSize: 13,
+                        fontFamily: "'Inter', system-ui, sans-serif",
+                        backgroundColor: "#f9fafb",
+                        border: "1px solid #e5e7eb",
+                        borderRadius: 10,
+                        outline: "none",
+                        color: "#111827",
+                        fontWeight: 500,
+                      }}
+                      onFocus={(e) => { e.target.style.borderColor = "rgba(253,75,35,0.4)"; e.target.style.backgroundColor = "#ffffff"; }}
+                      onBlur={(e) => { e.target.style.borderColor = "#e5e7eb"; e.target.style.backgroundColor = "#f9fafb"; }}
                     />
                   </div>
-                </div>
 
-                {/* Section 2: Contact & Tax Card */}
-                <div className="p-5 rounded-xl border border-slate-200/80 bg-slate-50/40 space-y-4">
-                  <div className="text-xs font-bold uppercase tracking-wider text-slate-700 pb-2 border-b border-slate-200/80 flex items-center gap-2">
-                    <span className="w-2 h-2 rounded-full bg-slate-600"></span>
-                    <span>Contact & Tax Profile</span>
-                  </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                  {/* Email & Phone Grid */}
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
                     <div>
-                      <label className="form-label">Email Address</label>
+                      <label style={{ fontSize: 11, fontWeight: 600, color: "#374151", textTransform: "uppercase", letterSpacing: "0.05em", display: "block", marginBottom: 6 }}>
+                        Email Address
+                      </label>
                       <input
                         type="email"
                         name="email"
                         value={formData.email}
                         onChange={handleInputChange}
-                        className="input-field font-medium"
                         placeholder="contact@solar.com"
+                        style={{
+                          width: "100%",
+                          height: 42,
+                          padding: "0 14px",
+                          fontSize: 13,
+                          fontFamily: "'Inter', system-ui, sans-serif",
+                          backgroundColor: "#f9fafb",
+                          border: "1px solid #e5e7eb",
+                          borderRadius: 10,
+                          outline: "none",
+                          color: "#111827",
+                        }}
+                        onFocus={(e) => { e.target.style.borderColor = "rgba(253,75,35,0.4)"; e.target.style.backgroundColor = "#ffffff"; }}
+                        onBlur={(e) => { e.target.style.borderColor = "#e5e7eb"; e.target.style.backgroundColor = "#f9fafb"; }}
                       />
                     </div>
                     <div>
-                      <label className="form-label">Phone Number</label>
+                      <label style={{ fontSize: 11, fontWeight: 600, color: "#374151", textTransform: "uppercase", letterSpacing: "0.05em", display: "block", marginBottom: 6 }}>
+                        Phone Number
+                      </label>
                       <input
                         type="text"
                         name="phone"
                         value={formData.phone}
                         onChange={handleInputChange}
-                        className="input-field font-mono"
                         placeholder="+91 98765 43210"
+                        style={{
+                          width: "100%",
+                          height: 42,
+                          padding: "0 14px",
+                          fontSize: 13,
+                          fontFamily: "'Inter', system-ui, sans-serif",
+                          backgroundColor: "#f9fafb",
+                          border: "1px solid #e5e7eb",
+                          borderRadius: 10,
+                          outline: "none",
+                          color: "#111827",
+                        }}
+                        onFocus={(e) => { e.target.style.borderColor = "rgba(253,75,35,0.4)"; e.target.style.backgroundColor = "#ffffff"; }}
+                        onBlur={(e) => { e.target.style.borderColor = "#e5e7eb"; e.target.style.backgroundColor = "#f9fafb"; }}
                       />
                     </div>
                   </div>
 
+                  {/* GSTIN */}
                   <div>
-                    <label className="form-label">GSTIN Number</label>
+                    <label style={{ fontSize: 11, fontWeight: 600, color: "#374151", textTransform: "uppercase", letterSpacing: "0.05em", display: "block", marginBottom: 6 }}>
+                      GSTIN Number
+                    </label>
                     <input
                       type="text"
                       name="gstNumber"
                       value={formData.gstNumber}
                       onChange={handleInputChange}
-                      className="input-field font-mono uppercase tracking-wider"
                       placeholder="22AAAAA0000A1Z5"
                       maxLength={15}
+                      style={{
+                        width: "100%",
+                        height: 42,
+                        padding: "0 14px",
+                        fontSize: 13,
+                        fontFamily: "monospace",
+                        textTransform: "uppercase",
+                        backgroundColor: "#f9fafb",
+                        border: "1px solid #e5e7eb",
+                        borderRadius: 10,
+                        outline: "none",
+                        color: "#111827",
+                        letterSpacing: "0.05em",
+                      }}
+                      onFocus={(e) => { e.target.style.borderColor = "rgba(253,75,35,0.4)"; e.target.style.backgroundColor = "#ffffff"; }}
+                      onBlur={(e) => { e.target.style.borderColor = "#e5e7eb"; e.target.style.backgroundColor = "#f9fafb"; }}
                     />
                     {formData.gstNumber && getGSTState(formData.gstNumber) && (
-                      <p className="text-[11px] font-semibold text-emerald-600 mt-1.5 flex items-center gap-1">
-                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                      <p style={{ fontSize: 11, fontWeight: 600, color: "#16a34a", margin: "6px 0 0 0", display: "flex", alignItems: "center", gap: 6 }}>
+                        <span style={{ width: 6, height: 6, borderRadius: "50%", backgroundColor: "#22c55e" }} />
                         <span>State Identified: {getGSTState(formData.gstNumber)}</span>
                       </p>
                     )}
                   </div>
-                </div>
 
-                {/* Section 3: Address & Status Card */}
-                <div className="p-5 rounded-xl border border-slate-200/80 bg-slate-50/40 space-y-5">
+                  {/* Address */}
                   <div>
-                    <label className="form-label">Corporate Address</label>
+                    <label style={{ fontSize: 11, fontWeight: 600, color: "#374151", textTransform: "uppercase", letterSpacing: "0.05em", display: "block", marginBottom: 6 }}>
+                      Corporate Address
+                    </label>
                     <textarea
                       name="address"
                       rows="3"
                       value={formData.address}
                       onChange={handleInputChange}
-                      className="input-field"
                       placeholder="Registered Office & Street Address"
-                    ></textarea>
+                      style={{
+                        width: "100%",
+                        padding: "10px 14px",
+                        fontSize: 13,
+                        fontFamily: "'Inter', system-ui, sans-serif",
+                        backgroundColor: "#f9fafb",
+                        border: "1px solid #e5e7eb",
+                        borderRadius: 10,
+                        outline: "none",
+                        color: "#111827",
+                        resize: "vertical",
+                      }}
+                      onFocus={(e) => { e.target.style.borderColor = "rgba(253,75,35,0.4)"; e.target.style.backgroundColor = "#ffffff"; }}
+                      onBlur={(e) => { e.target.style.borderColor = "#e5e7eb"; e.target.style.backgroundColor = "#f9fafb"; }}
+                    />
                   </div>
 
+                  {/* Status */}
                   <div>
-                    <label className="form-label">Operational Status</label>
+                    <label style={{ fontSize: 11, fontWeight: 600, color: "#374151", textTransform: "uppercase", letterSpacing: "0.05em", display: "block", marginBottom: 6 }}>
+                      Operational Status
+                    </label>
                     <select
                       name="status"
                       value={formData.status}
                       onChange={handleInputChange}
-                      className="input-field font-medium cursor-pointer"
+                      style={{
+                        width: "100%",
+                        height: 42,
+                        padding: "0 14px",
+                        fontSize: 13,
+                        fontFamily: "'Inter', system-ui, sans-serif",
+                        backgroundColor: "#f9fafb",
+                        border: "1px solid #e5e7eb",
+                        borderRadius: 10,
+                        outline: "none",
+                        color: "#111827",
+                        cursor: "pointer",
+                      }}
                     >
                       <option value="active">Active Company</option>
                       <option value="inactive">Inactive</option>
@@ -1200,52 +1571,107 @@ const CompanyMaster = () => {
                   </div>
                 </div>
 
-              </div>
-
-              {/* Modal Footer */}
-              <div className="px-7 py-4 bg-slate-50 border-t border-slate-200 flex items-center justify-end gap-3 flex-shrink-0 rounded-b-2xl">
-                <button type="button" onClick={handleCloseModal} className="px-4 py-2.5 rounded-xl border border-slate-300 bg-white text-slate-700 hover:bg-slate-50 text-xs font-semibold shadow-2xs transition-colors">
-                  Cancel
-                </button>
-                <button type="submit" disabled={submitting} className="btn-accent text-xs px-6 py-2.5 shadow-md shadow-[#FD4B23]/25 disabled:opacity-50 flex items-center gap-2">
-                  {submitting ? <><div className="w-3.5 h-3.5 rounded-full border-2 border-white border-t-transparent animate-spin"></div><span>Saving...</span></> : isEditing ? "Save Changes" : "Create Company"}
-                </button>
-              </div>
-            </form>
+                {/* Modal Footer */}
+                <div style={{ padding: "14px 24px", backgroundColor: "#f9fafb", borderTop: "1px solid #f3f4f6", display: "flex", alignItems: "center", justifyEnd: "flex-end", justifyContent: "flex-end", gap: 10 }}>
+                  <button
+                    type="button"
+                    onClick={handleCloseModal}
+                    style={{
+                      height: 38,
+                      padding: "0 16px",
+                      borderRadius: 10,
+                      backgroundColor: "#ffffff",
+                      border: "1px solid #d1d5db",
+                      color: "#374151",
+                      fontSize: 12,
+                      fontWeight: 600,
+                      cursor: "pointer",
+                    }}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={submitting}
+                    style={{
+                      height: 38,
+                      padding: "0 22px",
+                      borderRadius: 10,
+                      border: "none",
+                      background: "linear-gradient(135deg, #FD4B23 0%, #e5401e 100%)",
+                      color: "#ffffff",
+                      fontSize: 12,
+                      fontWeight: 600,
+                      cursor: submitting ? "not-allowed" : "pointer",
+                      opacity: submitting ? 0.6 : 1,
+                      boxShadow: "0 4px 12px rgba(253,75,35,0.25)",
+                    }}
+                  >
+                    {submitting ? "Saving..." : isEditing ? "Save Changes" : "Create Company"}
+                  </button>
+                </div>
+              </form>
+            </motion.div>
           </div>
-        </div>
-      )}
+        )}
+      </AnimatePresence>
 
       {/* DELETE CONFIRMATION MODAL */}
-      {deleteTarget && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fade-in">
-          <div className="bg-white w-full max-w-sm rounded-2xl shadow-xl border border-gray-200/60 p-6 text-center animate-scale-in">
-            <div className="w-14 h-14 rounded-2xl bg-red-50 text-red-500 mx-auto mb-4 flex items-center justify-center border border-red-100">
-              <AlertTriangle className="w-7 h-7" />
-            </div>
-            <h3 className="text-base font-extrabold text-gray-900">Delete Company?</h3>
-            <p className="text-xs text-gray-500 mt-1.5 leading-relaxed">
-              Are you sure you want to delete <span className="font-bold text-gray-900">"{deleteTarget.name}"</span>? This action cannot be undone.
-            </p>
+      <AnimatePresence>
+        {deleteTarget && (
+          <div style={{ position: "fixed", inset: 0, zIndex: 60, display: "flex", alignItems: "center", justifyCenter: "center", justifyContent: "center", padding: 16 }}>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              style={{ position: "absolute", inset: 0, backgroundColor: "rgba(0,0,0,0.5)", backdropFilter: "blur(4px)" }}
+              onClick={() => setDeleteTarget(null)}
+            />
 
-            <div className="flex items-center gap-3 mt-6">
-              <button
-                onClick={() => setDeleteTarget(null)}
-                className="btn-secondary text-xs flex-1 py-2.5"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={confirmDelete}
-                disabled={deleting}
-                className="flex-1 py-2.5 rounded-xl bg-red-600 hover:bg-red-700 text-white font-bold text-xs shadow-md shadow-red-600/20 transition-all disabled:opacity-50"
-              >
-                {deleting ? "Deleting..." : "Yes, Delete"}
-              </button>
-            </div>
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              style={{
+                position: "relative",
+                width: "100%",
+                maxWidth: 380,
+                backgroundColor: "#ffffff",
+                borderRadius: 20,
+                padding: 24,
+                textAlign: "center",
+                boxShadow: "0 20px 40px rgba(0,0,0,0.2)",
+                border: "1px solid #e5e7eb",
+                zIndex: 61,
+              }}
+            >
+              <div style={{ width: 48, height: 48, borderRadius: 14, backgroundColor: "#fef2f2", color: "#ef4444", margin: "0 auto 14px auto", display: "flex", alignItems: "center", justifyContent: "center", border: "1px solid #fecaca" }}>
+                <AlertTriangle size={24} />
+              </div>
+              <h3 style={{ fontSize: 16, fontWeight: 700, color: "#111827", margin: 0 }}>Delete Company?</h3>
+              <p style={{ fontSize: 12, color: "#6b7280", marginTop: 6, lineHeight: 1.5 }}>
+                Are you sure you want to delete <span style={{ fontWeight: 700, color: "#111827" }}>"{deleteTarget.name}"</span>? This action cannot be undone.
+              </p>
+
+              <div style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 20 }}>
+                <button
+                  onClick={() => setDeleteTarget(null)}
+                  style={{ flex: 1, height: 38, borderRadius: 10, backgroundColor: "#ffffff", border: "1px solid #d1d5db", color: "#374151", fontSize: 12, fontWeight: 600, cursor: "pointer" }}
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={confirmDelete}
+                  disabled={deleting}
+                  style={{ flex: 1, height: 38, borderRadius: 10, border: "none", backgroundColor: "#dc2626", color: "#ffffff", fontSize: 12, fontWeight: 600, cursor: deleting ? "not-allowed" : "pointer", opacity: deleting ? 0.6 : 1 }}
+                >
+                  {deleting ? "Deleting..." : "Yes, Delete"}
+                </button>
+              </div>
+            </motion.div>
           </div>
-        </div>
-      )}
+        )}
+      </AnimatePresence>
     </div>
   );
 };

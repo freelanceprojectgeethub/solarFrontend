@@ -46,16 +46,16 @@ html {
 }
 
 body, button, input, select, textarea, table, .card, .dashboard-card, .dashboard-kpi {
-  font-family: 'Raleway', system-ui, -apple-system, sans-serif !important;
+  font-family: 'Inter', system-ui, -apple-system, sans-serif !important;
   background-color: var(--color-page-bg);
   color: var(--color-text-primary);
   line-height: 1.6;
 }
 
-/* ── Headings Custom Font (Playwrite NZ Basic) ── */
+/* ── Headings Custom Font (Inter) ── */
 h1, h2, h3, h4, h5, h6, .font-heading {
-  font-family: 'Playwrite NZ Basic', cursive, system-ui, -apple-system, sans-serif !important;
-  font-weight: 500;
+  font-family: 'Inter', system-ui, -apple-system, sans-serif !important;
+  font-weight: 600;
 }
 
 /* ── Custom Scrollbar ── */
@@ -800,26 +800,28 @@ h1, h2, h3, h4, h5, h6, .font-heading {
   display: flex;
   align-items: center;
   gap: 11px;
-  padding: 8px 12px;
+  padding: 8.5px 12px;
   border-radius: 10px;
   font-size: 13px;
   font-weight: 500;
-  color: #8B8F96;
+  color: #71717a;
   text-decoration: none;
   transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
   position: relative;
   letter-spacing: -0.01em;
+  font-family: 'Inter', system-ui, sans-serif !important;
 }
 
 .sidebar-link:hover {
-  color: #E5E7EB;
-  background: rgba(255, 255, 255, 0.06);
+  color: #f4f4f5;
+  background: rgba(255, 255, 255, 0.04);
 }
 
 .sidebar-link.active {
-  background: rgba(253, 75, 35, 0.12);
+  background: linear-gradient(90deg, rgba(253, 75, 35, 0.12) 0%, rgba(253, 75, 35, 0.04) 100%);
   color: #FD4B23;
   font-weight: 600;
+  border: 1px solid rgba(253, 75, 35, 0.18);
 }
 
 .sidebar-link.active::before {
@@ -832,6 +834,7 @@ h1, h2, h3, h4, h5, h6, .font-heading {
   height: 18px;
   border-radius: 0 4px 4px 0;
   background: #FD4B23;
+  box-shadow: 0 0 10px rgba(253, 75, 35, 0.6);
 }
 
 .input-field {

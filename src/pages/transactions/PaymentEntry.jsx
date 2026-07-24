@@ -1,24 +1,24 @@
 import { useState, useEffect } from "react";
-import { 
-  CreditCard, 
-  CheckCircle2, 
-  FileText, 
-  Building2, 
-  Wallet, 
-  ArrowRight,
+import api from "../../utils/api";
+import { motion, AnimatePresence } from "framer-motion";
+import {
+  CreditCard,
+  CheckCircle2,
+  FileText,
+  Building2,
+  Wallet,
   ShieldCheck,
   Landmark,
-  BadgeIndianRupee
+  XCircle,
 } from "lucide-react";
 import { Link } from "react-router-dom";
-import api from "../../utils/api";
 
 const PaymentEntry = () => {
   const [suppliers, setSuppliers] = useState([]);
   const [banks, setBanks] = useState([]);
   const [purchases, setPurchases] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [successToast, setSuccessToast] = useState(false);
+  const [toast, setToast] = useState(null);
 
   const [formData, setFormData] = useState({
     supplierId: "",
@@ -30,6 +30,11 @@ const PaymentEntry = () => {
     purchaseId: "",
     notes: "",
   });
+
+  const showToast = (message, type = "success") => {
+    setToast({ message, type });
+    setTimeout(() => setToast(null), 3500);
+  };
 
   useEffect(() => {
     const fetchMasterData = async () => {
@@ -44,6 +49,7 @@ const PaymentEntry = () => {
         setPurchases(purRes.data.data || []);
       } catch (err) {
         console.error("Failed to fetch master data for payment voucher:", err);
+        showToast("Failed to load suppliers or banks", "error");
       }
     };
     fetchMasterData();
@@ -59,6 +65,13 @@ const PaymentEntry = () => {
     formData.mode === "upi" ||
     formData.mode === "cheque";
 
+  const selectedSupplierObj = suppliers.find((s) => s._id === formData.supplierId);
+  const filteredPurchases = purchases.filter((p) => {
+    if (!formData.supplierId) return true;
+    const supId = p.supplierId?._id || p.supplierId;
+    return supId === formData.supplierId;
+  });
+
   const formatCurrency = (val) => {
     return new Intl.NumberFormat("en-IN", {
       style: "currency",
@@ -70,15 +83,15 @@ const PaymentEntry = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!formData.supplierId) {
-      alert("Please select a vendor / supplier.");
+      showToast("Please select a vendor / supplier", "error");
       return;
     }
     if (!formData.amount || Number(formData.amount) <= 0) {
-      alert("Please enter a valid payment amount.");
+      showToast("Please enter a valid payment amount", "error");
       return;
     }
     if (showBankField && !formData.bankId) {
-      alert("Please select a bank account for the selected payment mode.");
+      showToast("Please select a company bank account", "error");
       return;
     }
 
@@ -90,15 +103,14 @@ const PaymentEntry = () => {
         amount: Number(formData.amount),
         date: formData.date,
         mode: formData.mode,
-        bankId: showBankField && formData.bankId ? formData.bankId : undefined,
+        bankId: showBankField ? formData.bankId : undefined,
         referenceNo: formData.referenceNo || undefined,
         purchaseId: formData.purchaseId || undefined,
-        notes: formData.notes || undefined,
+        notes: formData.notes,
       };
 
       await api.post("/payments", payload);
-      setSuccessToast(true);
-      setTimeout(() => setSuccessToast(false), 4000);
+      showToast("Payment Voucher posted successfully!");
 
       setFormData({
         supplierId: "",
@@ -111,282 +123,372 @@ const PaymentEntry = () => {
         notes: "",
       });
     } catch (error) {
-      alert(error.response?.data?.message || "Failed to save payment voucher");
+      showToast(error.response?.data?.message || "Failed to record payment voucher", "error");
     } finally {
       setLoading(false);
     }
   };
 
-  const selectedSupplierObj = suppliers.find((s) => s._id === formData.supplierId);
-
   return (
-    <div className="space-y-6 animate-fade-in pb-12">
-      {/* Toast Notification */}
-      {successToast && (
-        <div className="fixed top-5 right-5 z-50 flex items-center gap-3 px-5 py-3.5 bg-slate-900 text-white rounded-xl shadow-2xl border border-slate-700 animate-slide-in">
-          <CheckCircle2 className="w-5 h-5 text-emerald-400" />
-          <span className="text-xs font-semibold">Payment Voucher recorded successfully!</span>
-        </div>
-      )}
-
-      {/* Page Breadcrumb & Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="text-xl font-bold text-slate-900 tracking-tight flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-blue-500/10 text-blue-600 flex items-center justify-center">
-              <CreditCard className="w-4 h-4" />
-            </div>
-            Record Vendor Payment Voucher
-          </h1>
-        </div>
-
-        <div className="flex items-center gap-3">
-          <Link
-            to="/reports/payment-register"
-            className="px-4 py-2 rounded-xl border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold shadow-2xs transition-colors flex items-center gap-2"
+    <div style={{ display: "flex", flexDirection: "column", gap: 20 }} className="pb-10 relative">
+      {/* Toast Notification Floating Alert */}
+      <AnimatePresence>
+        {toast && (
+          <motion.div
+            initial={{ opacity: 0, y: 20, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 20, scale: 0.95 }}
+            style={{
+              position: "fixed",
+              bottom: 24,
+              right: 24,
+              zIndex: 100,
+              display: "flex",
+              alignItems: "center",
+              gap: 10,
+              padding: "12px 18px",
+              borderRadius: 14,
+              backgroundColor: toast.type === "error" ? "rgba(239,68,68,0.95)" : "rgba(18,18,22,0.95)",
+              color: "#ffffff",
+              fontSize: 13,
+              fontWeight: 500,
+              boxShadow: "0 14px 30px rgba(0,0,0,0.25)",
+              border: toast.type === "error" ? "1px solid rgba(255,255,255,0.2)" : "1px solid rgba(253,75,35,0.3)",
+              backdropFilter: "blur(12px)",
+            }}
           >
-            <FileText className="w-4 h-4 text-slate-500" />
+            {toast.type === "error" ? (
+              <XCircle size={18} color="#ffffff" />
+            ) : (
+              <CheckCircle2 size={18} color="#FD4B23" />
+            )}
+            <span>{toast.message}</span>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Page Title & Top Actions Bar */}
+      <div style={{ display: "flex", flexDirection: "column", gap: 16 }} className="md:!flex-row md:!items-center md:!justify-between">
+        <div>
+          <h1 style={{ fontSize: 24, fontWeight: 700, color: "#111827", letterSpacing: "-0.02em", margin: 0 }}>
+            Record Vendor Payment
+          </h1>
+          <p style={{ fontSize: 13, color: "#6b7280", marginTop: 4, margin: 0 }}>
+            Issue payment vouchers, record vendor bank transfers, and settle purchase payables.
+          </p>
+        </div>
+
+        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          <Link
+            to="/reports/payment"
+            style={{
+              height: 38,
+              padding: "0 16px",
+              borderRadius: 10,
+              backgroundColor: "#ffffff",
+              border: "1px solid #e5e7eb",
+              color: "#374151",
+              fontSize: 12,
+              fontWeight: 600,
+              textDecoration: "none",
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 8,
+              transition: "all 0.2s",
+            }}
+            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "#f9fafb"}
+            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = "#ffffff"}
+          >
+            <FileText size={14} color="#6b7280" />
             <span>Payment Register</span>
           </Link>
         </div>
       </div>
 
-      {/* Main Form */}
-      <form onSubmit={handleSubmit} className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        
-        {/* Left Column: Voucher Form Details */}
-        <div className="lg:col-span-8 space-y-6">
-          {/* Card 1: Vendor & Amount */}
-          <div className="bg-white rounded-2xl border border-slate-200/90 shadow-sm p-6 sm:p-7 space-y-6">
-            <div className="text-xs font-bold uppercase tracking-wider text-slate-700 pb-3 border-b border-slate-100 flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <span className="w-2.5 h-2.5 rounded-full bg-blue-500"></span>
-                <span>1. Vendor & Payment Amount</span>
-              </div>
-              <span className="text-[11px] font-mono text-slate-400 font-normal">PAY-AUTO-GEN</span>
+      {/* Main Entry Form Card */}
+      <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+        <div style={{ backgroundColor: "#ffffff", borderRadius: 16, border: "1px solid #e5e7eb", padding: 24, display: "flex", flexDirection: "column", gap: 20 }}>
+          <div style={{ fontSize: 12, fontWeight: 700, color: "#374151", textTransform: "uppercase", letterSpacing: "0.05em", paddingBottom: 12, borderBottom: "1px solid #f3f4f6", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <span style={{ width: 8, height: 8, borderRadius: "50%", backgroundColor: "#FD4B23" }} />
+              <span>Vendor Payout Voucher Details</span>
+            </div>
+            <span style={{ fontFamily: "monospace", color: "#9ca3af" }}>PAY-AUTO-GEN</span>
+          </div>
+
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 16 }}>
+            {/* Supplier / Vendor */}
+            <div style={{ gridColumn: "span 2" }}>
+              <label style={{ fontSize: 11, fontWeight: 600, color: "#374151", textTransform: "uppercase", letterSpacing: "0.05em", display: "block", marginBottom: 6 }}>
+                Vendor / Supplier <span style={{ color: "#ef4444" }}>*</span>
+              </label>
+              <select
+                name="supplierId"
+                required
+                value={formData.supplierId}
+                onChange={handleChange}
+                style={{
+                  width: "100%",
+                  height: 42,
+                  padding: "0 14px",
+                  fontSize: 13,
+                  fontFamily: "'Inter', system-ui, sans-serif",
+                  backgroundColor: "#f9fafb",
+                  border: "1px solid #e5e7eb",
+                  borderRadius: 10,
+                  outline: "none",
+                  color: "#111827",
+                  fontWeight: 600,
+                  cursor: "pointer",
+                }}
+              >
+                <option value="">Select Vendor Company...</option>
+                {suppliers.map((sup) => (
+                  <option key={sup._id} value={sup._id}>
+                    {sup.name} {sup.gstNumber ? `(GST: ${sup.gstNumber})` : ""}
+                  </option>
+                ))}
+              </select>
+              {selectedSupplierObj && (
+                <div style={{ fontSize: 11, color: "#16a34a", fontWeight: 500, marginTop: 4 }}>
+                  Contact: {selectedSupplierObj.phone || selectedSupplierObj.email || "No direct phone"}
+                </div>
+              )}
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* Supplier */}
+            {/* Payment Amount */}
+            <div>
+              <label style={{ fontSize: 11, fontWeight: 600, color: "#374151", textTransform: "uppercase", letterSpacing: "0.05em", display: "block", marginBottom: 6 }}>
+                Payment Amount (₹) <span style={{ color: "#ef4444" }}>*</span>
+              </label>
+              <input
+                type="number"
+                name="amount"
+                required
+                min="1"
+                step="0.01"
+                placeholder="Amount ₹"
+                value={formData.amount}
+                onChange={handleChange}
+                style={{
+                  width: "100%",
+                  height: 42,
+                  padding: "0 14px",
+                  fontSize: 14,
+                  fontWeight: 700,
+                  fontFamily: "'Inter', system-ui, sans-serif",
+                  backgroundColor: "#f9fafb",
+                  border: "1px solid #e5e7eb",
+                  borderRadius: 10,
+                  outline: "none",
+                  color: "#111827",
+                }}
+              />
+            </div>
+
+            {/* Payment Date */}
+            <div>
+              <label style={{ fontSize: 11, fontWeight: 600, color: "#374151", textTransform: "uppercase", letterSpacing: "0.05em", display: "block", marginBottom: 6 }}>
+                Payment Date <span style={{ color: "#ef4444" }}>*</span>
+              </label>
+              <input
+                type="date"
+                name="date"
+                required
+                value={formData.date}
+                onChange={handleChange}
+                style={{
+                  width: "100%",
+                  height: 42,
+                  padding: "0 14px",
+                  fontSize: 13,
+                  fontFamily: "'Inter', system-ui, sans-serif",
+                  backgroundColor: "#f9fafb",
+                  border: "1px solid #e5e7eb",
+                  borderRadius: 10,
+                  outline: "none",
+                  color: "#111827",
+                }}
+              />
+            </div>
+
+            {/* Payment Mode */}
+            <div>
+              <label style={{ fontSize: 11, fontWeight: 600, color: "#374151", textTransform: "uppercase", letterSpacing: "0.05em", display: "block", marginBottom: 6 }}>
+                Payment Mode
+              </label>
+              <select
+                name="mode"
+                value={formData.mode}
+                onChange={handleChange}
+                style={{
+                  width: "100%",
+                  height: 42,
+                  padding: "0 14px",
+                  fontSize: 13,
+                  fontFamily: "'Inter', system-ui, sans-serif",
+                  backgroundColor: "#f9fafb",
+                  border: "1px solid #e5e7eb",
+                  borderRadius: 10,
+                  outline: "none",
+                  color: "#111827",
+                  cursor: "pointer",
+                }}
+              >
+                <option value="cash">Cash Payment</option>
+                <option value="bank_transfer">Bank Transfer (NEFT/RTGS/IMPS)</option>
+                <option value="upi">UPI Transfer</option>
+                <option value="cheque">Cheque</option>
+              </select>
+            </div>
+
+            {/* Bank Selector (Conditional) */}
+            {showBankField && (
               <div>
-                <label className="form-label">
-                  <span>Vendor / Supplier Name</span>
-                  <span className="form-label-req">*</span>
+                <label style={{ fontSize: 11, fontWeight: 600, color: "#374151", textTransform: "uppercase", letterSpacing: "0.05em", display: "block", marginBottom: 6 }}>
+                  Company Bank Account <span style={{ color: "#ef4444" }}>*</span>
                 </label>
                 <select
-                  name="supplierId"
+                  name="bankId"
                   required
-                  value={formData.supplierId}
+                  value={formData.bankId}
                   onChange={handleChange}
-                  className="input-field font-medium text-sm cursor-pointer"
+                  style={{
+                    width: "100%",
+                    height: 42,
+                    padding: "0 14px",
+                    fontSize: 13,
+                    fontFamily: "'Inter', system-ui, sans-serif",
+                    backgroundColor: "#f9fafb",
+                    border: "1px solid #e5e7eb",
+                    borderRadius: 10,
+                    outline: "none",
+                    color: "#111827",
+                    cursor: "pointer",
+                  }}
                 >
-                  <option value="">Choose Supplier...</option>
-                  {suppliers.map((s) => (
-                    <option key={s._id} value={s._id}>
-                      {s.name}
+                  <option value="">Select Bank Account...</option>
+                  {banks.map((b) => (
+                    <option key={b._id} value={b._id}>
+                      {b.bankName} - A/C: {b.accountNumber} ({b.ifscCode})
                     </option>
                   ))}
                 </select>
-                {selectedSupplierObj && (
-                  <p className="text-[11px] font-semibold text-slate-500 mt-2 flex items-center gap-1.5">
-                    <Building2 className="w-3.5 h-3.5 text-slate-400" />
-                    <span>{selectedSupplierObj.name} {selectedSupplierObj.gstNumber ? `• GSTIN: ${selectedSupplierObj.gstNumber}` : ""}</span>
-                  </p>
-                )}
               </div>
+            )}
 
-              {/* Payment Amount */}
+            {/* Reference Number */}
+            {showBankField && (
               <div>
-                <label className="form-label">
-                  <span>Payment Amount (₹)</span>
-                  <span className="form-label-req">*</span>
+                <label style={{ fontSize: 11, fontWeight: 600, color: "#374151", textTransform: "uppercase", letterSpacing: "0.05em", display: "block", marginBottom: 6 }}>
+                  UTR / Reference / Cheque No.
                 </label>
-                <div className="relative">
-                  <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 font-mono font-bold text-sm">₹</span>
-                  <input
-                    type="number"
-                    name="amount"
-                    required
-                    step="0.01"
-                    min="0.01"
-                    value={formData.amount}
-                    onChange={handleChange}
-                    className="input-field font-mono font-bold text-sm pl-8"
-                    placeholder="0.00"
-                  />
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Card 2: Payment Mode & Banking */}
-          <div className="bg-white rounded-2xl border border-slate-200/90 shadow-sm p-6 sm:p-7 space-y-6">
-            <div className="text-xs font-bold uppercase tracking-wider text-slate-700 pb-3 border-b border-slate-100 flex items-center gap-2">
-              <span className="w-2.5 h-2.5 rounded-full bg-slate-700"></span>
-              <span>2. Mode of Payment & Account Routing</span>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* Payment Date */}
-              <div>
-                <label className="form-label">
-                  <span>Payment Date</span>
-                  <span className="form-label-req">*</span>
-                </label>
-                <input
-                  type="date"
-                  name="date"
-                  required
-                  value={formData.date}
-                  onChange={handleChange}
-                  className="input-field font-mono"
-                />
-              </div>
-
-              {/* Payment Mode */}
-              <div>
-                <label className="form-label">
-                  <span>Payment Mode</span>
-                  <span className="form-label-req">*</span>
-                </label>
-                <select
-                  name="mode"
-                  required
-                  value={formData.mode}
-                  onChange={handleChange}
-                  className="input-field font-medium cursor-pointer"
-                >
-                  <option value="cash">Cash Payment</option>
-                  <option value="bank_transfer">Bank Transfer (NEFT / RTGS)</option>
-                  <option value="upi">UPI / GPay / PhonePe</option>
-                  <option value="cheque">Cheque Deposit</option>
-                </select>
-              </div>
-
-              {/* Conditional Bank Account Selector */}
-              {showBankField && (
-                <div>
-                  <label className="form-label">
-                    <span>Source Bank Account</span>
-                    <span className="form-label-req">*</span>
-                  </label>
-                  <select
-                    name="bankId"
-                    required={showBankField}
-                    value={formData.bankId}
-                    onChange={handleChange}
-                    className="input-field font-medium cursor-pointer"
-                  >
-                    <option value="">Select Company Bank Account...</option>
-                    {banks.map((b) => (
-                      <option key={b._id} value={b._id}>
-                        {b.bankName} — A/C: {b.accountNumber} ({b.branch})
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              )}
-
-              {/* UTR / Cheque Ref No */}
-              <div>
-                <label className="form-label">Reference No / UTR / Cheque No</label>
                 <input
                   type="text"
                   name="referenceNo"
+                  placeholder="e.g. UTR1293840239"
                   value={formData.referenceNo}
                   onChange={handleChange}
-                  className="input-field font-mono uppercase text-xs tracking-wider"
-                  placeholder="e.g. UTR1234987654 / CHQ-000182"
+                  style={{
+                    width: "100%",
+                    height: 42,
+                    padding: "0 14px",
+                    fontSize: 13,
+                    fontFamily: "monospace",
+                    backgroundColor: "#f9fafb",
+                    border: "1px solid #e5e7eb",
+                    borderRadius: 10,
+                    outline: "none",
+                    color: "#111827",
+                  }}
                 />
               </div>
-            </div>
+            )}
 
-            {/* Against Purchase Dropdown */}
-            <div>
-              <label className="form-label">Link Against Purchase Order (Optional)</label>
+            {/* Link Purchase Invoice */}
+            <div style={{ gridColumn: "span 2" }}>
+              <label style={{ fontSize: 11, fontWeight: 600, color: "#374151", textTransform: "uppercase", letterSpacing: "0.05em", display: "block", marginBottom: 6 }}>
+                Link Purchase Invoice (Optional)
+              </label>
               <select
                 name="purchaseId"
                 value={formData.purchaseId}
                 onChange={handleChange}
-                className="input-field font-medium cursor-pointer"
+                style={{
+                  width: "100%",
+                  height: 42,
+                  padding: "0 14px",
+                  fontSize: 13,
+                  fontFamily: "'Inter', system-ui, sans-serif",
+                  backgroundColor: "#f9fafb",
+                  border: "1px solid #e5e7eb",
+                  borderRadius: 10,
+                  outline: "none",
+                  color: "#111827",
+                  cursor: "pointer",
+                }}
               >
-                <option value="">Direct Vendor Payment (Unlinked Account Voucher)</option>
-                {purchases.map((p) => (
+                <option value="">General Payment (Unlinked / On Account)</option>
+                {filteredPurchases.map((p) => (
                   <option key={p._id} value={p._id}>
-                    {p.purchaseNumber} — Billed Total: {formatCurrency(p.totalAmount)}
+                    {p.purchaseNumber || p._id} - Date: {new Date(p.date || p.createdAt).toLocaleDateString()}
                   </option>
                 ))}
               </select>
             </div>
           </div>
-        </div>
 
-        {/* Right Column: Voucher Summary & Submit */}
-        <div className="lg:col-span-4 space-y-6">
-          <div className="bg-white rounded-2xl border border-slate-200/90 shadow-sm p-6 sm:p-7 space-y-6">
-            <div className="text-xs font-bold uppercase tracking-wider text-slate-700 pb-2 border-b border-slate-100 flex items-center gap-2">
-              <span className="w-2.5 h-2.5 rounded-full bg-blue-500"></span>
-              <span>3. Payment Preview</span>
-            </div>
+          <div>
+            <label style={{ fontSize: 11, fontWeight: 600, color: "#374151", textTransform: "uppercase", letterSpacing: "0.05em", display: "block", marginBottom: 6 }}>
+              Voucher Remarks / Notes
+            </label>
+            <textarea
+              name="notes"
+              rows="2"
+              value={formData.notes}
+              onChange={handleChange}
+              placeholder="Payment remarks, invoice settlement reference..."
+              style={{
+                width: "100%",
+                padding: "10px 14px",
+                fontSize: 13,
+                fontFamily: "'Inter', system-ui, sans-serif",
+                backgroundColor: "#f9fafb",
+                border: "1px solid #e5e7eb",
+                borderRadius: 10,
+                outline: "none",
+                color: "#111827",
+                resize: "vertical",
+              }}
+            />
+          </div>
 
-            <div className="p-5 rounded-2xl bg-slate-900 text-white space-y-4 shadow-xl shadow-slate-900/10">
-              <div className="flex items-center justify-between text-xs text-slate-400 border-b border-slate-800 pb-3">
-                <span>Voucher Type</span>
-                <span className="font-semibold text-blue-400 uppercase tracking-wider">Debit Payment</span>
-              </div>
-
-              <div className="space-y-1">
-                <span className="text-[11px] text-slate-400 uppercase font-medium tracking-wider block">Net Payment Value</span>
-                <div className="text-2xl font-bold font-mono text-emerald-400">
-                  {formatCurrency(Number(formData.amount))}
-                </div>
-              </div>
-
-              <div className="pt-2 border-t border-slate-800 text-[11px] text-slate-400 space-y-1.5 font-medium">
-                <div className="flex justify-between">
-                  <span>Payee:</span>
-                  <span className="text-white font-semibold">{selectedSupplierObj?.name || "Not Selected"}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Method:</span>
-                  <span className="text-white font-semibold uppercase">{formData.mode.replace("_", " ")}</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Notes Textarea */}
-            <div>
-              <label className="form-label">Notes & Internal Memo</label>
-              <textarea
-                name="notes"
-                rows="4"
-                value={formData.notes}
-                onChange={handleChange}
-                className="input-field text-xs"
-                placeholder="Payment confirmation notes, transaction ID remarks..."
-              ></textarea>
-            </div>
-
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", paddingTop: 8 }}>
             <button
               type="submit"
               disabled={loading}
-              className="w-full btn-accent bg-blue-600 hover:bg-blue-700 py-3.5 text-xs font-bold shadow-lg shadow-blue-600/25 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+              style={{
+                height: 44,
+                padding: "0 28px",
+                borderRadius: 12,
+                border: "none",
+                background: "linear-gradient(135deg, #FD4B23 0%, #e5401e 100%)",
+                color: "#ffffff",
+                fontSize: 14,
+                fontWeight: 600,
+                cursor: loading ? "not-allowed" : "pointer",
+                opacity: loading ? 0.6 : 1,
+                boxShadow: "0 4px 14px rgba(253,75,35,0.3)",
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 8,
+              }}
             >
-              {loading ? (
-                <>
-                  <div className="w-4 h-4 rounded-full border-2 border-white border-t-transparent animate-spin"></div>
-                  <span>Recording Payment...</span>
-                </>
-              ) : (
-                <>
-                  <CheckCircle2 className="w-4 h-4" />
-                  <span>Save & Issue Payment Voucher</span>
-                </>
-              )}
+              <CheckCircle2 size={18} />
+              <span>{loading ? "Processing..." : "Record Payment Voucher"}</span>
             </button>
           </div>
         </div>
-
       </form>
     </div>
   );

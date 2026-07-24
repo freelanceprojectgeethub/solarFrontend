@@ -1,9 +1,23 @@
 import { useState, useEffect, useMemo } from "react";
 import api from "../../utils/api";
+import { motion, AnimatePresence } from "framer-motion";
 import {
-  Search, Plus, Edit2, Trash2, Percent, X, Eye, Copy, Download, RefreshCw,
-  LayoutGrid, List, CheckCircle2, XCircle, AlertTriangle, ShieldCheck,
-  FileCheck, Calculator, Hash, Layers
+  Search,
+  Plus,
+  Edit2,
+  Trash2,
+  Percent,
+  X,
+  Eye,
+  Download,
+  RefreshCw,
+  LayoutGrid,
+  List,
+  CheckCircle2,
+  XCircle,
+  AlertTriangle,
+  ShieldCheck,
+  Calculator,
 } from "lucide-react";
 
 const GstMaster = () => {
@@ -17,7 +31,8 @@ const GstMaster = () => {
   const [viewMode, setViewMode] = useState("table");
 
   const [page, setPage] = useState(1);
-  const [limit] = useState(10);
+  const limit = 10;
+  const [totalCount, setTotalCount] = useState(0);
 
   const [showModal, setShowModal] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
@@ -51,6 +66,7 @@ const GstMaster = () => {
       });
       const data = res.data.data || [];
       setGstList(data);
+      setTotalCount(res.data.total || data.length);
     } catch (err) {
       console.error("Failed to fetch GST records:", err);
       showToast("Failed to load GST rate records", "error");
@@ -66,12 +82,12 @@ const GstMaster = () => {
 
   // KPI Stats
   const stats = useMemo(() => {
-    const total = gstList.length;
+    const total = totalCount || gstList.length;
     const active = gstList.filter((g) => g.status !== "inactive").length;
     const igstCount = gstList.filter((g) => g.type === "IGST").length;
     const cgstSgstCount = gstList.filter((g) => g.type === "CGST" || g.type === "SGST").length;
     return { total, active, igstCount, cgstSgstCount };
-  }, [gstList]);
+  }, [gstList, totalCount]);
 
   // Filtered & Sorted
   const filteredGst = useMemo(() => {
@@ -227,198 +243,630 @@ const GstMaster = () => {
     showToast("Exported GST rates to CSV!");
   };
 
-  const getTypeBadgeColor = (type) => {
-    switch (type) {
-      case "IGST": return "bg-purple-50 text-purple-700 border-purple-200";
-      case "CGST": return "bg-blue-50 text-blue-700 border-blue-200";
-      case "SGST": return "bg-emerald-50 text-emerald-700 border-emerald-200";
-      case "CESS": return "bg-amber-50 text-amber-700 border-amber-200";
-      default: return "bg-gray-50 text-gray-700 border-gray-200";
-    }
-  };
-
   return (
-    <div className="space-y-6 animate-fade-in pb-10 relative">
-      {/* Toast Notification */}
-      {toast && (
-        <div className={`fixed bottom-5 right-5 z-50 flex items-center gap-2.5 px-4 py-3 rounded-xl shadow-xl border text-xs font-semibold backdrop-blur-xl animate-slide-down ${toast.type === "error"
-            ? "bg-red-950/95 border-red-500/40 text-red-200 ring-1 ring-red-500/20"
-            : "bg-[#18181B]/95 border-[#FD4B23]/40 text-white ring-1 ring-[#FD4B23]/20"
-          }`}>
-          {toast.type === "error" ? <XCircle className="w-5 h-5 text-red-400 flex-shrink-0" /> : <CheckCircle2 className="w-5 h-5 text-[#FD4B23] flex-shrink-0" />}
-          <span>{toast.message}</span>
-        </div>
-      )}
+    <div style={{ display: "flex", flexDirection: "column", gap: 20 }} className="pb-10 relative">
+      {/* Toast Notification Floating Alert */}
+      <AnimatePresence>
+        {toast && (
+          <motion.div
+            initial={{ opacity: 0, y: 20, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 20, scale: 0.95 }}
+            style={{
+              position: "fixed",
+              bottom: 24,
+              right: 24,
+              zIndex: 100,
+              display: "flex",
+              alignItems: "center",
+              gap: 10,
+              padding: "12px 18px",
+              borderRadius: 14,
+              backgroundColor: toast.type === "error" ? "rgba(239,68,68,0.95)" : "rgba(18,18,22,0.95)",
+              color: "#ffffff",
+              fontSize: 13,
+              fontWeight: 500,
+              boxShadow: "0 14px 30px rgba(0,0,0,0.25)",
+              border: toast.type === "error" ? "1px solid rgba(255,255,255,0.2)" : "1px solid rgba(253,75,35,0.3)",
+              backdropFilter: "blur(12px)",
+            }}
+          >
+            {toast.type === "error" ? (
+              <XCircle size={18} color="#ffffff" />
+            ) : (
+              <CheckCircle2 size={18} color="#FD4B23" />
+            )}
+            <span>{toast.message}</span>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
-      {/* Hero Banner */}
-      <div className="dashboard-hero relative overflow-hidden rounded-2xl bg-gradient-to-r from-[#111113] via-[#1A1A1A] to-[#251712] border border-white/[0.06] p-5 md:p-7 lg:p-8">
-        <div className="relative z-10 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
-          <div className="space-y-2.5">
-            <h1 className="text-xl md:text-2xl lg:text-3xl font-extrabold text-white tracking-tight">GST Tax Rates & Configuration</h1>
+      {/* Page Title & Top Actions Bar */}
+      <div style={{ display: "flex", flexDirection: "column", gap: 16 }} className="md:!flex-row md:!items-center md:!justify-between">
+        <div>
+          <h1 style={{ fontSize: 24, fontWeight: 700, color: "#111827", letterSpacing: "-0.02em", margin: 0 }}>
+            GST Rates & Tax Configuration
+          </h1>
+          <p style={{ fontSize: 13, color: "#6b7280", marginTop: 4, margin: 0 }}>
+            Define tax percentage rules (IGST, CGST, SGST) for automatic billing & invoicing calculations.
+          </p>
+        </div>
+
+        <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+          <button
+            onClick={() => fetchGst(true)}
+            disabled={refreshing}
+            style={{
+              height: 38,
+              padding: "0 14px",
+              borderRadius: 10,
+              backgroundColor: "#ffffff",
+              border: "1px solid #e5e7eb",
+              color: "#374151",
+              fontSize: 12,
+              fontWeight: 600,
+              cursor: refreshing ? "not-allowed" : "pointer",
+              display: "flex",
+              alignItems: "center",
+              gap: 8,
+              transition: "all 0.2s",
+            }}
+            onMouseEnter={(e) => { if (!refreshing) e.currentTarget.style.backgroundColor = "#f9fafb"; }}
+            onMouseLeave={(e) => { if (!refreshing) e.currentTarget.style.backgroundColor = "#ffffff"; }}
+            title="Refresh Data"
+          >
+            <RefreshCw size={14} className={refreshing ? "animate-spin text-[#FD4B23]" : ""} />
+            <span>Refresh</span>
+          </button>
+
+          <button
+            onClick={exportToCSV}
+            style={{
+              height: 38,
+              padding: "0 14px",
+              borderRadius: 10,
+              backgroundColor: "#ffffff",
+              border: "1px solid #e5e7eb",
+              color: "#374151",
+              fontSize: 12,
+              fontWeight: 600,
+              cursor: "pointer",
+              display: "flex",
+              alignItems: "center",
+              gap: 8,
+              transition: "all 0.2s",
+            }}
+            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "#f9fafb"}
+            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = "#ffffff"}
+            title="Export CSV Report"
+          >
+            <Download size={14} color="#FD4B23" />
+            <span>Export CSV</span>
+          </button>
+
+          <button
+            onClick={handleOpenAddModal}
+            style={{
+              height: 38,
+              padding: "0 18px",
+              borderRadius: 10,
+              border: "none",
+              background: "linear-gradient(135deg, #FD4B23 0%, #e5401e 100%)",
+              color: "#ffffff",
+              fontSize: 13,
+              fontWeight: 600,
+              cursor: "pointer",
+              display: "flex",
+              alignItems: "center",
+              gap: 8,
+              boxShadow: "0 4px 14px rgba(253,75,35,0.25)",
+              transition: "all 0.2s",
+            }}
+            onMouseEnter={(e) => e.currentTarget.style.boxShadow = "0 6px 20px rgba(253,75,35,0.35)"}
+            onMouseLeave={(e) => e.currentTarget.style.boxShadow = "0 4px 14px rgba(253,75,35,0.25)"}
+          >
+            <Plus size={16} strokeWidth={2.2} />
+            <span>Add GST Rate</span>
+          </button>
+        </div>
+      </div>
+
+      {/* KPI Stat Cards Grid */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 14 }}>
+        {/* Card 1: Total Rates */}
+        <div
+          style={{
+            backgroundColor: "#ffffff",
+            borderRadius: 16,
+            padding: "16px 20px",
+            border: "1px solid #e5e7eb",
+            display: "flex",
+            flexDirection: "column",
+            justifyContent: "space-between",
+            boxShadow: "0 2px 6px rgba(0,0,0,0.02)",
+          }}
+        >
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
+            <span style={{ fontSize: 11, fontWeight: 600, color: "#6b7280", textTransform: "uppercase", letterSpacing: "0.05em" }}>Total Tax Rules</span>
+            <div style={{ width: 34, height: 34, borderRadius: 10, backgroundColor: "rgba(253,75,35,0.08)", color: "#FD4B23", display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <Percent size={17} />
+            </div>
           </div>
-          <div className="flex flex-wrap items-center gap-3">
-            <button onClick={() => fetchGst(true)} disabled={refreshing}
-              className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs font-semibold border border-white/15 transition-all active:scale-95 disabled:opacity-50">
-              <RefreshCw className={`w-4 h-4 ${refreshing ? "animate-spin text-[#FD4B23]" : ""}`} />
-              <span className="hidden sm:inline">Refresh</span>
-            </button>
-            <button onClick={exportToCSV}
-              className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs font-semibold border border-white/15 transition-all active:scale-95">
-              <Download className="w-4 h-4 text-[#FFCE76]" />
-              <span className="hidden sm:inline">Export CSV</span>
-            </button>
-            <button onClick={handleOpenAddModal} className="btn-accent text-xs px-5 py-2.5 shadow-lg shadow-[#FD4B23]/30 hover:shadow-[#FD4B23]/50">
-              <Plus className="w-4 h-4" /><span>Add GST Rate</span>
-            </button>
+          <div>
+            <div style={{ fontSize: 24, fontWeight: 700, color: "#111827", letterSpacing: "-0.02em" }}>{stats.total}</div>
+            <div style={{ fontSize: 11, fontWeight: 500, color: "#9ca3af", marginTop: 2 }}>Configured Rules</div>
           </div>
         </div>
 
-        {/* KPI Stats Grid */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4 mt-6 pt-5 border-t border-white/[0.06]">
-          <div className="p-3.5 md:p-4 rounded-xl bg-white/[0.04] border border-white/[0.06]">
-            <div className="flex items-center justify-between text-gray-400 mb-2">
-              <span className="text-[11px] font-bold uppercase tracking-wider">Total Rates</span>
-              <div className="w-8 h-8 rounded-lg bg-[#FD4B23]/20 text-[#FD4B23] flex items-center justify-center"><Percent className="w-4 h-4" /></div>
+        {/* Card 2: Active Rules */}
+        <div
+          style={{
+            backgroundColor: "#ffffff",
+            borderRadius: 16,
+            padding: "16px 20px",
+            border: "1px solid #e5e7eb",
+            display: "flex",
+            flexDirection: "column",
+            justifyContent: "space-between",
+            boxShadow: "0 2px 6px rgba(0,0,0,0.02)",
+          }}
+        >
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
+            <span style={{ fontSize: 11, fontWeight: 600, color: "#6b7280", textTransform: "uppercase", letterSpacing: "0.05em" }}>Active Rules</span>
+            <div style={{ width: 34, height: 34, borderRadius: 10, backgroundColor: "rgba(34,197,94,0.08)", color: "#16a34a", display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <CheckCircle2 size={17} />
             </div>
-            <div className="text-xl md:text-2xl font-extrabold text-white">{stats.total}</div>
-            <div className="text-[11px] font-medium text-gray-400 mt-1">Tax Rules Configured</div>
           </div>
-          <div className="p-3.5 md:p-4 rounded-xl bg-white/[0.04] border border-white/[0.06]">
-            <div className="flex items-center justify-between text-gray-400 mb-2">
-              <span className="text-[11px] font-bold uppercase tracking-wider">Active Rules</span>
-              <div className="w-8 h-8 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center"><CheckCircle2 className="w-4 h-4" /></div>
+          <div>
+            <div style={{ fontSize: 24, fontWeight: 700, color: "#111827", letterSpacing: "-0.02em" }}>{stats.active}</div>
+            <div style={{ fontSize: 11, fontWeight: 600, color: "#16a34a", marginTop: 2 }}>
+              {stats.total > 0 ? Math.round((stats.active / stats.total) * 100) : 0}% Active
             </div>
-            <div className="text-xl md:text-2xl font-extrabold text-white">{stats.active}</div>
-            <div className="text-[11px] font-semibold text-emerald-400 mt-1">{stats.total > 0 ? Math.round((stats.active / stats.total) * 100) : 0}% Active</div>
           </div>
-          <div className="p-3.5 md:p-4 rounded-xl bg-white/[0.04] border border-white/[0.06]">
-            <div className="flex items-center justify-between text-gray-400 mb-2">
-              <span className="text-[11px] font-bold uppercase tracking-wider">IGST Rates</span>
-              <div className="w-8 h-8 rounded-lg bg-purple-500/20 text-purple-400 flex items-center justify-center"><ShieldCheck className="w-4 h-4" /></div>
+        </div>
+
+        {/* Card 3: IGST Rates */}
+        <div
+          style={{
+            backgroundColor: "#ffffff",
+            borderRadius: 16,
+            padding: "16px 20px",
+            border: "1px solid #e5e7eb",
+            display: "flex",
+            flexDirection: "column",
+            justifyContent: "space-between",
+            boxShadow: "0 2px 6px rgba(0,0,0,0.02)",
+          }}
+        >
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
+            <span style={{ fontSize: 11, fontWeight: 600, color: "#6b7280", textTransform: "uppercase", letterSpacing: "0.05em" }}>IGST Rules</span>
+            <div style={{ width: 34, height: 34, borderRadius: 10, backgroundColor: "rgba(147,51,234,0.08)", color: "#9333ea", display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <ShieldCheck size={17} />
             </div>
-            <div className="text-xl md:text-2xl font-extrabold text-white">{stats.igstCount}</div>
-            <div className="text-[11px] font-semibold text-purple-300 mt-1">Interstate Billing</div>
           </div>
-          <div className="p-3.5 md:p-4 rounded-xl bg-white/[0.04] border border-white/[0.06]">
-            <div className="flex items-center justify-between text-gray-400 mb-2">
-              <span className="text-[11px] font-bold uppercase tracking-wider">CGST / SGST</span>
-              <div className="w-8 h-8 rounded-lg bg-blue-500/20 text-blue-400 flex items-center justify-center"><Calculator className="w-4 h-4" /></div>
+          <div>
+            <div style={{ fontSize: 24, fontWeight: 700, color: "#111827", letterSpacing: "-0.02em" }}>{stats.igstCount}</div>
+            <div style={{ fontSize: 11, fontWeight: 600, color: "#9333ea", marginTop: 2 }}>Interstate Billing</div>
+          </div>
+        </div>
+
+        {/* Card 4: CGST / SGST Rates */}
+        <div
+          style={{
+            backgroundColor: "#ffffff",
+            borderRadius: 16,
+            padding: "16px 20px",
+            border: "1px solid #e5e7eb",
+            display: "flex",
+            flexDirection: "column",
+            justifyContent: "space-between",
+            boxShadow: "0 2px 6px rgba(0,0,0,0.02)",
+          }}
+        >
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
+            <span style={{ fontSize: 11, fontWeight: 600, color: "#6b7280", textTransform: "uppercase", letterSpacing: "0.05em" }}>CGST / SGST</span>
+            <div style={{ width: 34, height: 34, borderRadius: 10, backgroundColor: "rgba(59,130,246,0.08)", color: "#2563eb", display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <Calculator size={17} />
             </div>
-            <div className="text-xl md:text-2xl font-extrabold text-white">{stats.cgstSgstCount}</div>
-            <div className="text-[11px] font-medium text-gray-400 mt-1">Intrastate Rates</div>
+          </div>
+          <div>
+            <div style={{ fontSize: 24, fontWeight: 700, color: "#111827", letterSpacing: "-0.02em" }}>{stats.cgstSgstCount}</div>
+            <div style={{ fontSize: 11, fontWeight: 500, color: "#9ca3af", marginTop: 2 }}>Intrastate Billing</div>
           </div>
         </div>
       </div>
 
-      {/* Control & Filter Bar */}
-      <div className="bg-white p-3.5 md:p-4 rounded-xl border border-gray-200/80 flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3">
-        <div className="relative flex-1 max-w-md">
-          <Search className="w-4 h-4 text-gray-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
-          <input type="text" placeholder="Search tax name, rate %..." value={search} onChange={handleSearchChange}
-            className="input-field pl-10 pr-9 py-2.5 text-xs w-full bg-gray-50/80 focus:bg-white transition-colors" />
+      {/* Filter & Control Bar */}
+      <div
+        style={{
+          backgroundColor: "#ffffff",
+          borderRadius: 16,
+          padding: "14px 18px",
+          border: "1px solid #e5e7eb",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          gap: 12,
+          flexWrap: "wrap",
+          boxShadow: "0 1px 3px rgba(0,0,0,0.02)",
+        }}
+      >
+        {/* Search */}
+        <div style={{ position: "relative", flex: 1, minWidth: 260, maxWidth: 420 }}>
+          <Search size={15} color="#9ca3af" style={{ position: "absolute", left: 14, top: "50%", transform: "translateY(-50%)" }} />
+          <input
+            type="text"
+            placeholder="Search tax name, rate %..."
+            value={search}
+            onChange={handleSearchChange}
+            style={{
+              width: "100%",
+              height: 38,
+              paddingLeft: 38,
+              paddingRight: search ? 34 : 14,
+              fontSize: 13,
+              fontFamily: "'Inter', system-ui, sans-serif",
+              backgroundColor: "#f9fafb",
+              border: "1px solid #e5e7eb",
+              borderRadius: 10,
+              outline: "none",
+              color: "#111827",
+              transition: "all 0.2s",
+            }}
+            onFocus={(e) => {
+              e.target.style.borderColor = "rgba(253,75,35,0.4)";
+              e.target.style.backgroundColor = "#ffffff";
+              e.target.style.boxShadow = "0 0 0 3px rgba(253,75,35,0.08)";
+            }}
+            onBlur={(e) => {
+              e.target.style.borderColor = "#e5e7eb";
+              e.target.style.backgroundColor = "#f9fafb";
+              e.target.style.boxShadow = "none";
+            }}
+          />
           {search && (
-            <button onClick={() => setSearch("")} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 p-0.5"><X className="w-3.5 h-3.5" /></button>
+            <button
+              onClick={() => setSearch("")}
+              style={{ position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", color: "#9ca3af", cursor: "pointer", padding: 2 }}
+            >
+              <X size={14} />
+            </button>
           )}
         </div>
-        <div className="flex flex-wrap items-center justify-between lg:justify-end gap-3">
-          <select value={typeFilter} onChange={(e) => { setTypeFilter(e.target.value); setPage(1); }}
-            className="px-3.5 py-2.5 text-xs font-semibold bg-gray-50/80 border border-gray-200 rounded-xl text-gray-700 focus:outline-none focus:border-[#FD4B23] cursor-pointer transition-colors">
+
+        {/* Right Controls */}
+        <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+          {/* Tax Type Filter */}
+          <select
+            value={typeFilter}
+            onChange={(e) => { setTypeFilter(e.target.value); setPage(1); }}
+            style={{
+              height: 38,
+              padding: "0 12px",
+              fontSize: 12,
+              fontWeight: 500,
+              fontFamily: "'Inter', system-ui, sans-serif",
+              backgroundColor: "#f9fafb",
+              border: "1px solid #e5e7eb",
+              borderRadius: 10,
+              color: "#374151",
+              outline: "none",
+              cursor: "pointer",
+            }}
+          >
             <option value="all">All Tax Types</option>
             <option value="IGST">IGST</option>
             <option value="CGST">CGST</option>
             <option value="SGST">SGST</option>
             <option value="CESS">CESS</option>
           </select>
-          <div className="inline-flex p-1 rounded-xl bg-gray-100/90 border border-gray-200 text-xs">
-            <button onClick={() => { setStatusFilter("all"); setPage(1); }}
-              className={`px-3 py-1.5 rounded-lg font-bold transition-all ${statusFilter === "all" ? "bg-white text-gray-900 shadow-sm" : "text-gray-500 hover:text-gray-800"}`}>All ({gstList.length})</button>
-            <button onClick={() => { setStatusFilter("active"); setPage(1); }}
-              className={`px-3 py-1.5 rounded-lg font-bold transition-all ${statusFilter === "active" ? "bg-emerald-500 text-white shadow-sm" : "text-gray-500 hover:text-gray-800"}`}>Active ({stats.active})</button>
-            <button onClick={() => { setStatusFilter("inactive"); setPage(1); }}
-              className={`px-3 py-1.5 rounded-lg font-bold transition-all ${statusFilter === "inactive" ? "bg-red-500 text-white shadow-sm" : "text-gray-500 hover:text-gray-800"}`}>Inactive</button>
+
+          {/* Status Tabs */}
+          <div style={{ display: "inline-flex", padding: 3, borderRadius: 10, backgroundColor: "#f3f4f6", border: "1px solid #e5e7eb" }}>
+            <button
+              onClick={() => { setStatusFilter("all"); setPage(1); }}
+              style={{
+                padding: "5px 12px",
+                borderRadius: 8,
+                border: "none",
+                fontSize: 12,
+                fontWeight: 600,
+                cursor: "pointer",
+                backgroundColor: statusFilter === "all" ? "#ffffff" : "transparent",
+                color: statusFilter === "all" ? "#111827" : "#6b7280",
+                boxShadow: statusFilter === "all" ? "0 1px 3px rgba(0,0,0,0.08)" : "none",
+                transition: "all 0.2s",
+              }}
+            >
+              All ({gstList.length})
+            </button>
+            <button
+              onClick={() => { setStatusFilter("active"); setPage(1); }}
+              style={{
+                padding: "5px 12px",
+                borderRadius: 8,
+                border: "none",
+                fontSize: 12,
+                fontWeight: 600,
+                cursor: "pointer",
+                backgroundColor: statusFilter === "active" ? "#16a34a" : "transparent",
+                color: statusFilter === "active" ? "#ffffff" : "#6b7280",
+                boxShadow: statusFilter === "active" ? "0 1px 3px rgba(0,0,0,0.12)" : "none",
+                transition: "all 0.2s",
+              }}
+            >
+              Active ({stats.active})
+            </button>
+            <button
+              onClick={() => { setStatusFilter("inactive"); setPage(1); }}
+              style={{
+                padding: "5px 12px",
+                borderRadius: 8,
+                border: "none",
+                fontSize: 12,
+                fontWeight: 600,
+                cursor: "pointer",
+                backgroundColor: statusFilter === "inactive" ? "#ef4444" : "transparent",
+                color: statusFilter === "inactive" ? "#ffffff" : "#6b7280",
+                boxShadow: statusFilter === "inactive" ? "0 1px 3px rgba(0,0,0,0.12)" : "none",
+                transition: "all 0.2s",
+              }}
+            >
+              Inactive
+            </button>
           </div>
-          <select value={sortBy} onChange={(e) => setSortBy(e.target.value)}
-            className="px-3.5 py-2.5 text-xs font-semibold bg-gray-50/80 border border-gray-200 rounded-xl text-gray-700 focus:outline-none focus:border-[#FD4B23] cursor-pointer transition-colors">
+
+          {/* Sort Dropdown */}
+          <select
+            value={sortBy}
+            onChange={(e) => setSortBy(e.target.value)}
+            style={{
+              height: 38,
+              padding: "0 12px",
+              fontSize: 12,
+              fontWeight: 500,
+              fontFamily: "'Inter', system-ui, sans-serif",
+              backgroundColor: "#f9fafb",
+              border: "1px solid #e5e7eb",
+              borderRadius: 10,
+              color: "#374151",
+              outline: "none",
+              cursor: "pointer",
+            }}
+          >
             <option value="newest">Newest First</option>
             <option value="rate_high">Rate: High–Low</option>
             <option value="rate_low">Rate: Low–High</option>
             <option value="name_asc">Name: A–Z</option>
           </select>
-          <div className="inline-flex p-1 rounded-xl bg-gray-100/90 border border-gray-200">
-            <button onClick={() => setViewMode("table")} className={`p-2 rounded-lg transition-all ${viewMode === "table" ? "bg-white text-[#FD4B23] shadow-sm" : "text-gray-400 hover:text-gray-700"}`} title="Table View"><List className="w-4 h-4" /></button>
-            <button onClick={() => setViewMode("grid")} className={`p-2 rounded-lg transition-all ${viewMode === "grid" ? "bg-white text-[#FD4B23] shadow-sm" : "text-gray-400 hover:text-gray-700"}`} title="Grid View"><LayoutGrid className="w-4 h-4" /></button>
+
+          {/* View Mode Switcher */}
+          <div style={{ display: "inline-flex", padding: 3, borderRadius: 10, backgroundColor: "#f3f4f6", border: "1px solid #e5e7eb" }}>
+            <button
+              onClick={() => setViewMode("table")}
+              style={{
+                padding: "6px 8px",
+                borderRadius: 7,
+                border: "none",
+                cursor: "pointer",
+                backgroundColor: viewMode === "table" ? "#ffffff" : "transparent",
+                color: viewMode === "table" ? "#FD4B23" : "#9ca3af",
+                boxShadow: viewMode === "table" ? "0 1px 3px rgba(0,0,0,0.08)" : "none",
+                display: "flex",
+                alignItems: "center",
+              }}
+              title="Table View"
+            >
+              <List size={16} />
+            </button>
+            <button
+              onClick={() => setViewMode("grid")}
+              style={{
+                padding: "6px 8px",
+                borderRadius: 7,
+                border: "none",
+                cursor: "pointer",
+                backgroundColor: viewMode === "grid" ? "#ffffff" : "transparent",
+                color: viewMode === "grid" ? "#FD4B23" : "#9ca3af",
+                boxShadow: viewMode === "grid" ? "0 1px 3px rgba(0,0,0,0.08)" : "none",
+                display: "flex",
+                alignItems: "center",
+              }}
+              title="Grid View"
+            >
+              <LayoutGrid size={16} />
+            </button>
           </div>
         </div>
       </div>
 
       {/* Main Content Area */}
       {loading ? (
-        <div className="bg-white rounded-xl border border-gray-200/80 p-14 text-center">
-          <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-[#FFF0ED] text-[#FD4B23] mb-4 animate-bounce"><Percent className="w-7 h-7" /></div>
-          <h3 className="text-base font-bold text-gray-900">Loading GST Rates...</h3>
-          <p className="text-xs text-gray-400 mt-1">Retrieving taxation master rules</p>
+        <div style={{ backgroundColor: "#ffffff", borderRadius: 16, border: "1px solid #e5e7eb", padding: 60, textAlign: "center" }}>
+          <div style={{ width: 52, height: 52, borderRadius: 14, backgroundColor: "rgba(253,75,35,0.08)", color: "#FD4B23", margin: "0 auto 16px auto", display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <Percent size={24} className="animate-spin" />
+          </div>
+          <h3 style={{ fontSize: 16, fontWeight: 700, color: "#111827", margin: 0 }}>Loading GST Rates...</h3>
+          <p style={{ fontSize: 13, color: "#9ca3af", marginTop: 4 }}>Retrieving records from database</p>
         </div>
       ) : paginatedGst.length === 0 ? (
-        <div className="bg-white rounded-xl border border-gray-200/80 p-14 text-center">
-          <div className="w-16 h-16 rounded-2xl bg-gray-100 text-gray-400 mx-auto mb-4 flex items-center justify-center"><Percent className="w-8 h-8" /></div>
-          <h3 className="text-base font-bold text-gray-900">No GST Rates Found</h3>
-          <p className="text-xs text-gray-500 max-w-sm mx-auto mt-1.5 mb-6 leading-relaxed">
-            {search || statusFilter !== "all" || typeFilter !== "all" ? "No GST rates match your current search or filter." : "Create GST rate rules (e.g. 18% IGST) for tax calculation in purchases and sales."}
+        <div style={{ backgroundColor: "#ffffff", borderRadius: 16, border: "1px solid #e5e7eb", padding: 60, textAlign: "center" }}>
+          <div style={{ width: 56, height: 56, borderRadius: 16, backgroundColor: "#f3f4f6", color: "#9ca3af", margin: "0 auto 16px auto", display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <Percent size={28} />
+          </div>
+          <h3 style={{ fontSize: 16, fontWeight: 700, color: "#111827", margin: 0 }}>No GST Rates Found</h3>
+          <p style={{ fontSize: 13, color: "#6b7280", maxWidth: 360, margin: "6px auto 20px auto", lineHeight: 1.5 }}>
+            {search || statusFilter !== "all" || typeFilter !== "all"
+              ? "No GST rates matched your search query or filter settings."
+              : "No GST rates have been added yet. Click below to create your first GST rate."}
           </p>
           {search || statusFilter !== "all" || typeFilter !== "all" ? (
-            <button onClick={() => { setSearch(""); setStatusFilter("all"); setTypeFilter("all"); }} className="btn-secondary text-xs px-4 py-2.5">Reset Filters</button>
+            <button
+              onClick={() => { setSearch(""); setStatusFilter("all"); setTypeFilter("all"); }}
+              style={{
+                height: 38,
+                padding: "0 16px",
+                borderRadius: 10,
+                backgroundColor: "#f3f4f6",
+                border: "1px solid #e5e7eb",
+                color: "#374151",
+                fontSize: 12,
+                fontWeight: 600,
+                cursor: "pointer",
+              }}
+            >
+              Reset Filters
+            </button>
           ) : (
-            <button onClick={handleOpenAddModal} className="btn-accent text-xs px-5 py-2.5"><Plus className="w-4 h-4" /><span>Add GST Rate</span></button>
+            <button
+              onClick={handleOpenAddModal}
+              style={{
+                height: 38,
+                padding: "0 18px",
+                borderRadius: 10,
+                border: "none",
+                background: "linear-gradient(135deg, #FD4B23 0%, #e5401e 100%)",
+                color: "#ffffff",
+                fontSize: 13,
+                fontWeight: 600,
+                cursor: "pointer",
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 8,
+              }}
+            >
+              <Plus size={16} />
+              <span>Add GST Rate</span>
+            </button>
           )}
         </div>
       ) : viewMode === "table" ? (
-        /* TABLE VIEW */
-        <div className="bg-white rounded-xl border border-gray-200/80 overflow-hidden">
-          <div className="overflow-x-auto custom-scrollbar">
-            <table className="w-full text-left border-collapse min-w-[700px]">
+        /* ENTERPRISE TABLE VIEW */
+        <div style={{ backgroundColor: "#ffffff", borderRadius: 16, border: "1px solid #e5e7eb", overflow: "hidden", boxShadow: "0 1px 3px rgba(0,0,0,0.02)" }}>
+          <div style={{ overflowX: "auto" }}>
+            <table style={{ width: "100%", borderCollapse: "collapse", textAlign: "left" }}>
               <thead>
-                <tr className="bg-[#FAFBFC] border-b border-[#EEF0F3] text-gray-500 text-[11px] font-bold uppercase tracking-wider">
-                  <th className="py-3.5 px-5">Tax Name</th>
-                  <th className="py-3.5 px-5">Rate %</th>
-                  <th className="py-3.5 px-5">Tax Type</th>
-                  <th className="py-3.5 px-5">Status</th>
-                  <th className="py-3.5 px-5 text-right">Actions</th>
+                <tr style={{ backgroundColor: "#f9fafb", borderBottom: "1px solid #e5e7eb", fontSize: 11, fontWeight: 700, color: "#6b7280", textTransform: "uppercase", letterSpacing: "0.05em" }}>
+                  <th style={{ padding: "14px 20px" }}>Tax Label</th>
+                  <th style={{ padding: "14px 20px" }}>Rate %</th>
+                  <th style={{ padding: "14px 20px" }}>Tax Type</th>
+                  <th style={{ padding: "14px 20px" }}>Status</th>
+                  <th style={{ padding: "14px 20px", textAlign: "right" }}>Actions</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-100 text-xs text-gray-700">
+              <tbody style={{ fontSize: 13, color: "#374151" }}>
                 {paginatedGst.map((gst) => (
-                  <tr key={gst._id} className="hover:bg-slate-50/80 transition-colors group">
-                    <td className="py-3.5 px-5 font-bold text-gray-900">
-                      <div className="flex items-center gap-3">
-                        <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-purple-600 to-indigo-600 text-white flex items-center justify-center font-black text-xs shadow-sm flex-shrink-0">
+                  <tr
+                    key={gst._id}
+                    style={{ borderBottom: "1px solid #f3f4f6", transition: "background-color 0.15s" }}
+                    onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "#f9fafb"}
+                    onMouseLeave={(e) => e.currentTarget.style.backgroundColor = "transparent"}
+                  >
+                    {/* Tax Label */}
+                    <td style={{ padding: "14px 20px" }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                        <div
+                          style={{
+                            width: 38,
+                            height: 38,
+                            borderRadius: 11,
+                            background: "linear-gradient(135deg, #9333ea, #6b21a8)",
+                            color: "#ffffff",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            fontWeight: 700,
+                            fontSize: 13,
+                            flexShrink: 0,
+                            boxShadow: "0 2px 8px rgba(147,51,234,0.2)",
+                          }}
+                        >
                           {gst.rate}%
                         </div>
-                        <div className="min-w-0">
-                          <span className="text-[13px] group-hover:text-purple-600 transition-colors truncate block">{gst.taxName}</span>
+                        <div style={{ minWidth: 0 }}>
+                          <div style={{ fontWeight: 600, color: "#111827", fontSize: 14 }}>
+                            {gst.taxName}
+                          </div>
                         </div>
                       </div>
                     </td>
-                    <td className="py-3.5 px-5 font-mono font-bold text-gray-900 text-sm">
+
+                    {/* Rate Percentage */}
+                    <td style={{ padding: "14px 20px", fontFamily: "monospace", fontWeight: 700, fontSize: 14, color: "#111827" }}>
                       {gst.rate}%
                     </td>
-                    <td className="py-3.5 px-5">
-                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold border ${getTypeBadgeColor(gst.type)}`}>
+
+                    {/* Tax Type */}
+                    <td style={{ padding: "14px 20px" }}>
+                      <span
+                        style={{
+                          fontSize: 11,
+                          fontWeight: 700,
+                          padding: "2px 8px",
+                          borderRadius: 12,
+                          backgroundColor: gst.type === "IGST" ? "#faf5ff" : gst.type === "CGST" ? "#eff6ff" : "#f0fdf4",
+                          color: gst.type === "IGST" ? "#7e22ce" : gst.type === "CGST" ? "#1d4ed8" : "#15803d",
+                          border: gst.type === "IGST" ? "1px solid #e9d5ff" : gst.type === "CGST" ? "1px solid #bfdbfe" : "1px solid #bbf7d0",
+                        }}
+                      >
                         {gst.type || "GST"}
                       </span>
                     </td>
-                    <td className="py-3.5 px-5">
-                      <button onClick={() => handleToggleStatus(gst)}
-                        className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold transition-all cursor-pointer ${gst.status === "inactive" ? "bg-red-50 text-red-600 border border-red-200 hover:bg-red-100" : "bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100"
-                          }`} title="Toggle status">
-                        <span className={`w-1.5 h-1.5 rounded-full ${gst.status === "inactive" ? "bg-red-500" : "bg-emerald-500"}`}></span>
-                        {gst.status === "inactive" ? "Inactive" : "Active"}
+
+                    {/* Status */}
+                    <td style={{ padding: "14px 20px" }}>
+                      <button
+                        onClick={() => handleToggleStatus(gst)}
+                        style={{
+                          display: "inline-flex",
+                          alignItems: "center",
+                          gap: 6,
+                          padding: "3px 10px",
+                          borderRadius: 20,
+                          fontSize: 11,
+                          fontWeight: 600,
+                          border: gst.status === "inactive" ? "1px solid #fecaca" : "1px solid #bbf7d0",
+                          backgroundColor: gst.status === "inactive" ? "#fef2f2" : "#f0fdf4",
+                          color: gst.status === "inactive" ? "#dc2626" : "#16a34a",
+                          cursor: "pointer",
+                        }}
+                        title="Toggle status"
+                      >
+                        <span style={{ width: 6, height: 6, borderRadius: "50%", backgroundColor: gst.status === "inactive" ? "#ef4444" : "#22c55e" }} />
+                        <span>{gst.status === "inactive" ? "Inactive" : "Active"}</span>
                       </button>
                     </td>
-                    <td className="py-3.5 px-5 text-right">
-                      <div className="inline-flex items-center justify-end gap-1">
-                        <button onClick={() => setInspectGst(gst)} className="p-1.5 rounded-lg text-gray-500 hover:text-blue-600 hover:bg-blue-50 transition-colors"><Eye className="w-4 h-4" /></button>
-                        <button onClick={() => handleEdit(gst)} className="p-1.5 rounded-lg text-gray-500 hover:text-[#FD4B23] hover:bg-[#FFF0ED] transition-colors"><Edit2 className="w-4 h-4" /></button>
-                        <button onClick={() => setDeleteTarget(gst)} className="p-1.5 rounded-lg text-gray-500 hover:text-red-600 hover:bg-red-50 transition-colors"><Trash2 className="w-4 h-4" /></button>
+
+                    {/* Actions */}
+                    <td style={{ padding: "14px 20px", textAlign: "right" }}>
+                      <div style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
+                        <button
+                          onClick={() => setInspectGst(gst)}
+                          style={{ width: 30, height: 30, borderRadius: 8, border: "none", backgroundColor: "transparent", color: "#6b7280", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}
+                          onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = "#eff6ff"; e.currentTarget.style.color = "#2563eb"; }}
+                          onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = "transparent"; e.currentTarget.style.color = "#6b7280"; }}
+                          title="Inspect Details"
+                        >
+                          <Eye size={15} />
+                        </button>
+                        <button
+                          onClick={() => handleEdit(gst)}
+                          style={{ width: 30, height: 30, borderRadius: 8, border: "none", backgroundColor: "transparent", color: "#6b7280", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}
+                          onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = "rgba(253,75,35,0.08)"; e.currentTarget.style.color = "#FD4B23"; }}
+                          onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = "transparent"; e.currentTarget.style.color = "#6b7280"; }}
+                          title="Edit Rate"
+                        >
+                          <Edit2 size={15} />
+                        </button>
+                        <button
+                          onClick={() => setDeleteTarget(gst)}
+                          style={{ width: 30, height: 30, borderRadius: 8, border: "none", backgroundColor: "transparent", color: "#6b7280", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}
+                          onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = "#fef2f2"; e.currentTarget.style.color = "#ef4444"; }}
+                          onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = "transparent"; e.currentTarget.style.color = "#6b7280"; }}
+                          title="Delete Rate"
+                        >
+                          <Trash2 size={15} />
+                        </button>
                       </div>
                     </td>
                   </tr>
@@ -428,35 +876,114 @@ const GstMaster = () => {
           </div>
         </div>
       ) : (
-        /* GRID VIEW */
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+        /* CARDS GRID VIEW */
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: 16 }}>
           {paginatedGst.map((gst) => (
-            <div key={gst._id} className="bg-white rounded-2xl border border-gray-200/80 p-5 hover:shadow-lg hover:border-purple-500/20 transition-all duration-300 flex flex-col justify-between group">
+            <div
+              key={gst._id}
+              style={{
+                backgroundColor: "#ffffff",
+                borderRadius: 16,
+                border: "1px solid #e5e7eb",
+                padding: 20,
+                display: "flex",
+                flexDirection: "column",
+                justifyContent: "space-between",
+                transition: "box-shadow 0.2s, border-color 0.2s",
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.borderColor = "rgba(147,51,234,0.3)";
+                e.currentTarget.style.boxShadow = "0 10px 25px -5px rgba(0,0,0,0.05)";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.borderColor = "#e5e7eb";
+                e.currentTarget.style.boxShadow = "none";
+              }}
+            >
               <div>
-                <div className="flex items-start justify-between gap-3 mb-3">
-                  <div className="flex items-center gap-3 min-w-0">
-                    <div className="w-11 h-11 rounded-2xl bg-gradient-to-tr from-purple-600 to-indigo-600 text-white flex items-center justify-center font-black text-base shadow-md shadow-purple-500/15 flex-shrink-0">
+                <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 10, marginBottom: 14 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                    <div
+                      style={{
+                        width: 42,
+                        height: 42,
+                        borderRadius: 12,
+                        background: "linear-gradient(135deg, #9333ea, #6b21a8)",
+                        color: "#ffffff",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        fontWeight: 700,
+                        fontSize: 14,
+                        flexShrink: 0,
+                        boxShadow: "0 2px 8px rgba(147,51,234,0.2)",
+                      }}
+                    >
                       {gst.rate}%
                     </div>
-                    <div className="min-w-0">
-                      <h3 className="font-extrabold text-gray-900 text-sm group-hover:text-purple-600 transition-colors truncate">{gst.taxName}</h3>
-                      <span className="text-[10px] text-gray-400">GST Rule</span>
+                    <div style={{ minWidth: 0 }}>
+                      <h3 style={{ fontSize: 15, fontWeight: 700, color: "#111827", margin: 0 }}>
+                        {gst.taxName}
+                      </h3>
+                      <span style={{ fontSize: 11, color: "#9ca3af" }}>Tax Rule</span>
                     </div>
                   </div>
-                  <button onClick={() => handleToggleStatus(gst)}
-                    className={`px-2 py-0.5 rounded-full text-[10px] font-bold border flex-shrink-0 ${gst.status === "inactive" ? "bg-red-50 text-red-600 border-red-200" : "bg-emerald-50 text-emerald-700 border-emerald-200"
-                      }`}>{gst.status === "inactive" ? "Inactive" : "Active"}</button>
+
+                  <button
+                    onClick={() => handleToggleStatus(gst)}
+                    style={{
+                      padding: "2px 8px",
+                      borderRadius: 12,
+                      fontSize: 10,
+                      fontWeight: 600,
+                      border: gst.status === "inactive" ? "1px solid #fecaca" : "1px solid #bbf7d0",
+                      backgroundColor: gst.status === "inactive" ? "#fef2f2" : "#f0fdf4",
+                      color: gst.status === "inactive" ? "#dc2626" : "#16a34a",
+                      cursor: "pointer",
+                    }}
+                  >
+                    {gst.status === "inactive" ? "Inactive" : "Active"}
+                  </button>
                 </div>
-                <div className="space-y-2 text-xs py-3 border-t border-b border-gray-100 my-3">
-                  <div className="flex items-center justify-between"><span className="text-gray-400">Tax Rate</span><span className="font-mono font-bold text-gray-900 text-base">{gst.rate}%</span></div>
-                  <div className="flex items-center justify-between"><span className="text-gray-400">Tax Type</span><span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold border ${getTypeBadgeColor(gst.type)}`}>{gst.type}</span></div>
+
+                <div style={{ display: "flex", flexDirection: "column", gap: 8, padding: "12px 0", borderTop: "1px solid #f3f4f6", borderBottom: "1px solid #f3f4f6", margin: "12px 0", fontSize: 12 }}>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                    <span style={{ color: "#9ca3af" }}>Tax Rate</span>
+                    <span style={{ fontFamily: "monospace", fontWeight: 700, fontSize: 14, color: "#111827" }}>{gst.rate}%</span>
+                  </div>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                    <span style={{ color: "#9ca3af" }}>Tax Type</span>
+                    <span style={{ fontSize: 10, fontWeight: 700, padding: "2px 8px", borderRadius: 12, backgroundColor: "#faf5ff", color: "#7e22ce", border: "1px solid #e9d5ff" }}>
+                      {gst.type}
+                    </span>
+                  </div>
                 </div>
               </div>
-              <div className="flex items-center justify-between pt-2">
-                <button onClick={() => setInspectGst(gst)} className="inline-flex items-center gap-1.5 text-xs font-bold text-blue-600 hover:text-blue-800 transition-colors"><Eye className="w-3.5 h-3.5" /><span>View Details</span></button>
-                <div className="flex items-center gap-1">
-                  <button onClick={() => handleEdit(gst)} className="p-1.5 rounded-lg text-gray-500 hover:text-[#FD4B23] hover:bg-[#FFF0ED] transition-colors"><Edit2 className="w-4 h-4" /></button>
-                  <button onClick={() => setDeleteTarget(gst)} className="p-1.5 rounded-lg text-gray-500 hover:text-red-600 hover:bg-red-50 transition-colors"><Trash2 className="w-4 h-4" /></button>
+
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", paddingTop: 4 }}>
+                <button
+                  onClick={() => setInspectGst(gst)}
+                  style={{ background: "none", border: "none", color: "#2563eb", fontSize: 12, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: 4 }}
+                >
+                  <Eye size={14} />
+                  <span>Quick View</span>
+                </button>
+
+                <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                  <button
+                    onClick={() => handleEdit(gst)}
+                    style={{ width: 30, height: 30, borderRadius: 8, border: "none", backgroundColor: "transparent", color: "#6b7280", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}
+                    title="Edit"
+                  >
+                    <Edit2 size={15} />
+                  </button>
+                  <button
+                    onClick={() => setDeleteTarget(gst)}
+                    style={{ width: 30, height: 30, borderRadius: 8, border: "none", backgroundColor: "transparent", color: "#6b7280", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}
+                    title="Delete"
+                  >
+                    <Trash2 size={15} />
+                  </button>
                 </div>
               </div>
             </div>
@@ -464,90 +991,253 @@ const GstMaster = () => {
         </div>
       )}
 
-      {/* Pagination Controls */}
-      <div className="bg-white p-3.5 rounded-xl border border-gray-200/80 flex flex-col sm:flex-row items-center justify-between gap-3">
-        <span className="text-xs font-semibold text-gray-500">Showing {paginatedGst.length} of {filteredGst.length} GST rates (Page {page} of {computedTotalPages})</span>
-        <div className="flex items-center gap-2">
-          <button onClick={() => setPage((p) => Math.max(p - 1, 1))} disabled={page === 1} className="btn-secondary text-xs px-3.5 py-1.5 disabled:opacity-40 disabled:cursor-not-allowed">Previous</button>
-          <span className="px-3.5 py-1.5 text-xs font-bold text-gray-800 bg-gray-50 border border-gray-200 rounded-lg">{page} / {computedTotalPages}</span>
-          <button onClick={() => setPage((p) => Math.min(p + 1, computedTotalPages))} disabled={page === computedTotalPages || computedTotalPages === 0} className="btn-secondary text-xs px-3.5 py-1.5 disabled:opacity-40 disabled:cursor-not-allowed">Next</button>
+      {/* Pagination Footer */}
+      <div
+        style={{
+          backgroundColor: "#ffffff",
+          borderRadius: 16,
+          padding: "12px 18px",
+          border: "1px solid #e5e7eb",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          gap: 12,
+          flexWrap: "wrap",
+        }}
+      >
+        <span style={{ fontSize: 12, fontWeight: 500, color: "#6b7280" }}>
+          Showing {paginatedGst.length} of {filteredGst.length} GST rates (Page {page} of {computedTotalPages})
+        </span>
+
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <button
+            onClick={() => setPage((prev) => Math.max(prev - 1, 1))}
+            disabled={page === 1}
+            style={{
+              height: 32,
+              padding: "0 14px",
+              borderRadius: 8,
+              backgroundColor: "#ffffff",
+              border: "1px solid #e5e7eb",
+              color: "#374151",
+              fontSize: 12,
+              fontWeight: 600,
+              cursor: page === 1 ? "not-allowed" : "pointer",
+              opacity: page === 1 ? 0.4 : 1,
+            }}
+          >
+            Previous
+          </button>
+
+          <span style={{ fontSize: 12, fontWeight: 600, color: "#111827", padding: "0 8px" }}>
+            {page} / {computedTotalPages}
+          </span>
+
+          <button
+            onClick={() => setPage((prev) => Math.min(prev + 1, computedTotalPages))}
+            disabled={page === computedTotalPages || computedTotalPages === 0}
+            style={{
+              height: 32,
+              padding: "0 14px",
+              borderRadius: 8,
+              backgroundColor: "#ffffff",
+              border: "1px solid #e5e7eb",
+              color: "#374151",
+              fontSize: 12,
+              fontWeight: 600,
+              cursor: (page === computedTotalPages || computedTotalPages === 0) ? "not-allowed" : "pointer",
+              opacity: (page === computedTotalPages || computedTotalPages === 0) ? 0.4 : 1,
+            }}
+          >
+            Next
+          </button>
         </div>
       </div>
 
-      {/* Slide-over Inspection Drawer */}
-      {inspectGst && (
-        <div className="fixed inset-0 z-50 overflow-hidden animate-fade-in">
-          <div className="absolute inset-0 bg-black/50 backdrop-blur-xs" onClick={() => setInspectGst(null)}></div>
-          <div className="fixed inset-y-0 right-0 max-w-full flex pl-10">
-            <div className="w-screen max-w-md bg-white border-l border-gray-200 shadow-2xl flex flex-col justify-between animate-slide-down">
-              <div className="p-6 bg-gradient-to-r from-[#111113] to-[#1F1F1F] text-white flex items-center justify-between border-b border-white/10">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-purple-600 text-white flex items-center justify-center font-black text-base shadow-md">
+      {/* INSPECTION SLIDE-OVER DRAWER */}
+      <AnimatePresence>
+        {inspectGst && (
+          <div style={{ position: "fixed", inset: 0, zIndex: 60, overflow: "hidden" }}>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              style={{ position: "absolute", inset: 0, backgroundColor: "rgba(0,0,0,0.5)", backdropFilter: "blur(4px)" }}
+              onClick={() => setInspectGst(null)}
+            />
+
+            <motion.div
+              initial={{ x: "100%" }}
+              animate={{ x: 0 }}
+              exit={{ x: "100%" }}
+              transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
+              style={{
+                position: "fixed",
+                top: 0,
+                bottom: 0,
+                right: 0,
+                width: "100%",
+                maxWidth: 440,
+                backgroundColor: "#ffffff",
+                boxShadow: "-10px 0 30px rgba(0,0,0,0.15)",
+                display: "flex",
+                flexDirection: "column",
+                zIndex: 61,
+              }}
+            >
+              {/* Drawer Header */}
+              <div style={{ padding: "20px 24px", background: "linear-gradient(180deg, #111113 0%, #1a1a1e 100%)", color: "#ffffff", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                  <div style={{ width: 40, height: 40, borderRadius: 12, background: "linear-gradient(135deg, #9333ea, #6b21a8)", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700, fontSize: 14 }}>
                     {inspectGst.rate}%
                   </div>
                   <div>
-                    <h3 className="font-extrabold text-base line-clamp-1">{inspectGst.taxName}</h3>
-                    <span className="text-[10px] text-gray-400">GST Rule Profile</span>
+                    <h3 style={{ fontSize: 16, fontWeight: 700, margin: 0 }}>{inspectGst.taxName}</h3>
+                    <span style={{ fontSize: 11, color: "#9ca3af" }}>GST Tax Rule</span>
                   </div>
                 </div>
-                <button onClick={() => setInspectGst(null)} className="p-1.5 rounded-xl text-gray-400 hover:text-white hover:bg-white/10"><X className="w-5 h-5" /></button>
+                <button onClick={() => setInspectGst(null)} style={{ background: "none", border: "none", color: "#9ca3af", cursor: "pointer", padding: 4 }}>
+                  <X size={20} />
+                </button>
               </div>
 
-              <div className="p-6 space-y-5 overflow-y-auto flex-1 text-xs custom-scrollbar">
-                <div className="flex items-center justify-between p-4 rounded-xl bg-gray-50 border border-gray-200">
-                  <span className="font-bold text-gray-700">Status</span>
-                  <span className={`px-3 py-1 rounded-full text-xs font-bold ${inspectGst.status === "inactive" ? "bg-red-50 text-red-600 border border-red-200" : "bg-emerald-50 text-emerald-700 border border-emerald-200"}`}>
+              {/* Drawer Body */}
+              <div style={{ padding: 24, display: "flex", flexDirection: "column", gap: 20, overflowY: "auto", flex: 1, fontSize: 13 }}>
+                {/* Status Card */}
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 16px", borderRadius: 12, backgroundColor: "#f9fafb", border: "1px solid #e5e7eb" }}>
+                  <span style={{ fontWeight: 600, color: "#374151" }}>Status</span>
+                  <span style={{ padding: "3px 10px", borderRadius: 20, fontSize: 11, fontWeight: 600, backgroundColor: inspectGst.status === "inactive" ? "#fef2f2" : "#f0fdf4", color: inspectGst.status === "inactive" ? "#dc2626" : "#16a34a", border: inspectGst.status === "inactive" ? "1px solid #fecaca" : "1px solid #bbf7d0" }}>
                     {inspectGst.status === "inactive" ? "Inactive" : "Active"}
                   </span>
                 </div>
 
-                <div className="space-y-3">
-                  <h4 className="font-extrabold uppercase tracking-wider text-[11px] text-purple-600 flex items-center gap-1.5"><Calculator className="w-4 h-4" />Tax Calculation</h4>
-                  <div className="p-4 rounded-xl bg-white border border-gray-200 space-y-2.5">
-                    <div className="flex justify-between"><span className="text-gray-500">Tax Name</span><span className="font-bold text-gray-900">{inspectGst.taxName}</span></div>
-                    <div className="flex justify-between"><span className="text-gray-500">Tax Rate</span><span className="font-mono font-bold text-gray-900 text-sm">{inspectGst.rate}%</span></div>
-                    <div className="flex justify-between"><span className="text-gray-500">Tax Category</span><span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold border ${getTypeBadgeColor(inspectGst.type)}`}>{inspectGst.type}</span></div>
+                {/* Calculation Details */}
+                <div>
+                  <h4 style={{ fontSize: 11, fontWeight: 700, color: "#9333ea", textTransform: "uppercase", letterSpacing: "0.05em", margin: "0 0 10px 0", display: "flex", alignItems: "center", gap: 6 }}>
+                    <Calculator size={15} />
+                    Tax Rule Specifications
+                  </h4>
+                  <div style={{ padding: 16, borderRadius: 12, backgroundColor: "#ffffff", border: "1px solid #e5e7eb", display: "flex", flexDirection: "column", gap: 10 }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                      <span style={{ color: "#6b7280" }}>Tax Name</span>
+                      <span style={{ fontWeight: 700, color: "#111827" }}>{inspectGst.taxName}</span>
+                    </div>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                      <span style={{ color: "#6b7280" }}>Percentage Rate</span>
+                      <span style={{ fontFamily: "monospace", fontWeight: 700, fontSize: 14, color: "#111827" }}>{inspectGst.rate}%</span>
+                    </div>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                      <span style={{ color: "#6b7280" }}>Tax Category</span>
+                      <span style={{ fontSize: 10, fontWeight: 700, padding: "2px 8px", borderRadius: 12, backgroundColor: "#faf5ff", color: "#7e22ce", border: "1px solid #e9d5ff" }}>{inspectGst.type}</span>
+                    </div>
                   </div>
                 </div>
 
-                <div className="space-y-2 pt-3 border-t border-gray-100 text-[11px] text-gray-400">
-                  <div className="flex justify-between"><span>System ID:</span><span className="font-mono text-gray-600">{inspectGst._id}</span></div>
-                  <div className="flex justify-between"><span>Created At:</span><span>{new Date(inspectGst.createdAt).toLocaleString()}</span></div>
-                  <div className="flex justify-between"><span>Updated At:</span><span>{new Date(inspectGst.updatedAt).toLocaleString()}</span></div>
+                {/* Timestamps */}
+                <div style={{ paddingTop: 12, borderTop: "1px solid #f3f4f6", fontSize: 11, color: "#9ca3af", display: "flex", flexDirection: "column", gap: 4 }}>
+                  <div style={{ display: "flex", justifyContent: "space-between" }}>
+                    <span>System ID:</span>
+                    <span style={{ fontFamily: "monospace", color: "#4b5563" }}>{inspectGst._id}</span>
+                  </div>
+                  <div style={{ display: "flex", justifyContent: "space-between" }}>
+                    <span>Created:</span>
+                    <span>{new Date(inspectGst.createdAt).toLocaleString()}</span>
+                  </div>
+                  <div style={{ display: "flex", justifyContent: "space-between" }}>
+                    <span>Updated:</span>
+                    <span>{new Date(inspectGst.updatedAt).toLocaleString()}</span>
+                  </div>
                 </div>
               </div>
 
-              <div className="p-5 bg-gray-50 border-t border-gray-200 flex items-center justify-between gap-3">
-                <button onClick={() => { const g = inspectGst; setInspectGst(null); handleEdit(g); }} className="btn-accent text-xs flex-1 py-2.5"><Edit2 className="w-4 h-4" /><span>Edit Rate</span></button>
-                <button onClick={() => { const g = inspectGst; setInspectGst(null); setDeleteTarget(g); }} className="p-2.5 rounded-xl border border-red-200 bg-red-50 text-red-600 hover:bg-red-100 transition-colors"><Trash2 className="w-4 h-4" /></button>
+              {/* Drawer Actions */}
+              <div style={{ padding: "16px 24px", backgroundColor: "#f9fafb", borderTop: "1px solid #e5e7eb", display: "flex", gap: 10 }}>
+                <button
+                  onClick={() => { const g = inspectGst; setInspectGst(null); handleEdit(g); }}
+                  style={{
+                    flex: 1,
+                    height: 38,
+                    borderRadius: 10,
+                    border: "none",
+                    background: "linear-gradient(135deg, #FD4B23 0%, #e5401e 100%)",
+                    color: "#fff",
+                    fontSize: 12,
+                    fontWeight: 600,
+                    cursor: "pointer",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    gap: 6,
+                  }}
+                >
+                  <Edit2 size={14} />
+                  <span>Edit Rate</span>
+                </button>
+                <button
+                  onClick={() => { const g = inspectGst; setInspectGst(null); setDeleteTarget(g); }}
+                  style={{ width: 38, height: 38, borderRadius: 10, border: "1px solid #fecaca", backgroundColor: "#fef2f2", color: "#dc2626", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}
+                  title="Delete Rate"
+                >
+                  <Trash2 size={14} />
+                </button>
               </div>
-            </div>
+            </motion.div>
           </div>
-        </div>
-      )}
+        )}
+      </AnimatePresence>
 
-      {/* Create & Edit Modal */}
-      {showModal && (
-        <div className="fixed inset-0 bg-slate-950/60 backdrop-blur-xs flex items-start sm:items-center justify-center z-50 p-3 sm:p-6 pt-6 sm:pt-8 overflow-y-auto animate-fade-in">
-          <div className="bg-white w-full max-w-lg rounded-2xl shadow-2xl border border-slate-200/90 overflow-hidden animate-scale-in my-auto max-h-[85vh] flex flex-col">
-            {/* Modal Header */}
-            <div className="flex items-center justify-between px-7 py-5 border-b border-slate-200 bg-white flex-shrink-0">
-              <div>
-                <h3 className="text-lg font-bold text-slate-900 tracking-tight">{isEditing ? "Edit GST Tax Rate" : "Add GST Tax Rate"}</h3>
-                <p className="text-xs text-slate-500 mt-1">Define tax label, rate percentage & tax category</p>
+      {/* CREATE & EDIT FORM MODAL */}
+      <AnimatePresence>
+        {showModal && (
+          <div style={{ position: "fixed", inset: 0, zIndex: 60, display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              style={{ position: "absolute", inset: 0, backgroundColor: "rgba(0,0,0,0.5)", backdropFilter: "blur(4px)" }}
+              onClick={handleCloseModal}
+            />
+
+            <motion.div
+              initial={{ opacity: 0, scale: 0.96, y: 10 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.96, y: 10 }}
+              transition={{ duration: 0.2, ease: "easeOut" }}
+              style={{
+                position: "relative",
+                width: "100%",
+                maxWidth: 480,
+                backgroundColor: "#ffffff",
+                borderRadius: 20,
+                boxShadow: "0 25px 50px -12px rgba(0,0,0,0.25)",
+                border: "1px solid #e5e7eb",
+                overflow: "hidden",
+                display: "flex",
+                flexDirection: "column",
+                zIndex: 61,
+              }}
+            >
+              {/* Modal Header */}
+              <div style={{ padding: "18px 24px", borderBottom: "1px solid #f3f4f6", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                <div>
+                  <h3 style={{ fontSize: 17, fontWeight: 700, color: "#111827", margin: 0 }}>
+                    {isEditing ? "Edit GST Tax Rate" : "Add GST Tax Rate"}
+                  </h3>
+                  <p style={{ fontSize: 12, color: "#6b7280", margin: "2px 0 0 0" }}>
+                    Configure tax percentage rules for invoices.
+                  </p>
+                </div>
+                <button onClick={handleCloseModal} style={{ background: "none", border: "none", color: "#9ca3af", cursor: "pointer", padding: 4 }}>
+                  <X size={18} />
+                </button>
               </div>
-              <button onClick={handleCloseModal} className="p-2 rounded-xl text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors"><X className="w-5 h-5" /></button>
-            </div>
 
-            {/* Modal Form Body */}
-            <form onSubmit={handleSubmit} className="flex flex-col flex-1 overflow-hidden">
-              <div className="p-7 space-y-6 text-xs overflow-y-auto flex-1 custom-scrollbar">
-
-                <div className="p-5 rounded-xl border border-slate-200/80 bg-slate-50/40 space-y-4">
+              {/* Modal Body */}
+              <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", flex: 1 }}>
+                <div style={{ padding: 24, display: "flex", flexDirection: "column", gap: 16, fontSize: 13 }}>
                   <div>
-                    <label className="form-label">
-                      <span>Tax Label / Name</span>
-                      <span className="form-label-req">*</span>
+                    <label style={{ fontSize: 11, fontWeight: 600, color: "#374151", textTransform: "uppercase", letterSpacing: "0.05em", display: "block", marginBottom: 6 }}>
+                      Tax Label / Name <span style={{ color: "#ef4444" }}>*</span>
                     </label>
                     <input
                       type="text"
@@ -555,16 +1245,29 @@ const GstMaster = () => {
                       required
                       value={formData.taxName}
                       onChange={handleInputChange}
-                      className="input-field font-medium text-sm"
                       placeholder="e.g. GST 18%, IGST 12%, Exempt 0%"
+                      style={{
+                        width: "100%",
+                        height: 42,
+                        padding: "0 14px",
+                        fontSize: 13,
+                        fontFamily: "'Inter', system-ui, sans-serif",
+                        backgroundColor: "#f9fafb",
+                        border: "1px solid #e5e7eb",
+                        borderRadius: 10,
+                        outline: "none",
+                        color: "#111827",
+                        fontWeight: 500,
+                      }}
+                      onFocus={(e) => { e.target.style.borderColor = "rgba(253,75,35,0.4)"; e.target.style.backgroundColor = "#ffffff"; }}
+                      onBlur={(e) => { e.target.style.borderColor = "#e5e7eb"; e.target.style.backgroundColor = "#f9fafb"; }}
                     />
                   </div>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
                     <div>
-                      <label className="form-label">
-                        <span>Rate Percentage (%)</span>
-                        <span className="form-label-req">*</span>
+                      <label style={{ fontSize: 11, fontWeight: 600, color: "#374151", textTransform: "uppercase", letterSpacing: "0.05em", display: "block", marginBottom: 6 }}>
+                        Rate Percentage (%) <span style={{ color: "#ef4444" }}>*</span>
                       </label>
                       <input
                         type="number"
@@ -575,17 +1278,45 @@ const GstMaster = () => {
                         max="100"
                         value={formData.rate}
                         onChange={handleInputChange}
-                        className="input-field font-mono font-semibold text-sm"
                         placeholder="18"
+                        style={{
+                          width: "100%",
+                          height: 42,
+                          padding: "0 14px",
+                          fontSize: 13,
+                          fontFamily: "monospace",
+                          backgroundColor: "#f9fafb",
+                          border: "1px solid #e5e7eb",
+                          borderRadius: 10,
+                          outline: "none",
+                          color: "#111827",
+                          fontWeight: 700,
+                        }}
+                        onFocus={(e) => { e.target.style.borderColor = "rgba(253,75,35,0.4)"; e.target.style.backgroundColor = "#ffffff"; }}
+                        onBlur={(e) => { e.target.style.borderColor = "#e5e7eb"; e.target.style.backgroundColor = "#f9fafb"; }}
                       />
                     </div>
                     <div>
-                      <label className="form-label">Tax Type</label>
+                      <label style={{ fontSize: 11, fontWeight: 600, color: "#374151", textTransform: "uppercase", letterSpacing: "0.05em", display: "block", marginBottom: 6 }}>
+                        Tax Type
+                      </label>
                       <select
                         name="type"
                         value={formData.type}
                         onChange={handleInputChange}
-                        className="input-field font-medium cursor-pointer"
+                        style={{
+                          width: "100%",
+                          height: 42,
+                          padding: "0 14px",
+                          fontSize: 13,
+                          fontFamily: "'Inter', system-ui, sans-serif",
+                          backgroundColor: "#f9fafb",
+                          border: "1px solid #e5e7eb",
+                          borderRadius: 10,
+                          outline: "none",
+                          color: "#111827",
+                          cursor: "pointer",
+                        }}
                       >
                         <option value="IGST">IGST (Interstate)</option>
                         <option value="CGST">CGST (Central)</option>
@@ -596,12 +1327,26 @@ const GstMaster = () => {
                   </div>
 
                   <div>
-                    <label className="form-label">Status</label>
+                    <label style={{ fontSize: 11, fontWeight: 600, color: "#374151", textTransform: "uppercase", letterSpacing: "0.05em", display: "block", marginBottom: 6 }}>
+                      Status
+                    </label>
                     <select
                       name="status"
                       value={formData.status}
                       onChange={handleInputChange}
-                      className="input-field font-medium cursor-pointer"
+                      style={{
+                        width: "100%",
+                        height: 42,
+                        padding: "0 14px",
+                        fontSize: 13,
+                        fontFamily: "'Inter', system-ui, sans-serif",
+                        backgroundColor: "#f9fafb",
+                        border: "1px solid #e5e7eb",
+                        borderRadius: 10,
+                        outline: "none",
+                        color: "#111827",
+                        cursor: "pointer",
+                      }}
                     >
                       <option value="active">Active</option>
                       <option value="inactive">Inactive</option>
@@ -609,41 +1354,107 @@ const GstMaster = () => {
                   </div>
                 </div>
 
-              </div>
+                {/* Modal Footer */}
+                <div style={{ padding: "14px 24px", backgroundColor: "#f9fafb", borderTop: "1px solid #f3f4f6", display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 10 }}>
+                  <button
+                    type="button"
+                    onClick={handleCloseModal}
+                    style={{
+                      height: 38,
+                      padding: "0 16px",
+                      borderRadius: 10,
+                      backgroundColor: "#ffffff",
+                      border: "1px solid #d1d5db",
+                      color: "#374151",
+                      fontSize: 12,
+                      fontWeight: 600,
+                      cursor: "pointer",
+                    }}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={submitting}
+                    style={{
+                      height: 38,
+                      padding: "0 22px",
+                      borderRadius: 10,
+                      border: "none",
+                      background: "linear-gradient(135deg, #FD4B23 0%, #e5401e 100%)",
+                      color: "#ffffff",
+                      fontSize: 12,
+                      fontWeight: 600,
+                      cursor: submitting ? "not-allowed" : "pointer",
+                      opacity: submitting ? 0.6 : 1,
+                      boxShadow: "0 4px 12px rgba(253,75,35,0.25)",
+                    }}
+                  >
+                    {submitting ? "Saving..." : isEditing ? "Save Changes" : "Create Rate"}
+                  </button>
+                </div>
+              </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
 
-              {/* Modal Footer */}
-              <div className="px-7 py-4 bg-slate-50 border-t border-slate-200 flex items-center justify-end gap-3 flex-shrink-0 rounded-b-2xl">
-                <button type="button" onClick={handleCloseModal} className="px-4 py-2.5 rounded-xl border border-slate-300 bg-white text-slate-700 hover:bg-slate-50 text-xs font-semibold shadow-2xs transition-colors">
+      {/* DELETE CONFIRMATION MODAL */}
+      <AnimatePresence>
+        {deleteTarget && (
+          <div style={{ position: "fixed", inset: 0, zIndex: 60, display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              style={{ position: "absolute", inset: 0, backgroundColor: "rgba(0,0,0,0.5)", backdropFilter: "blur(4px)" }}
+              onClick={() => setDeleteTarget(null)}
+            />
+
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              style={{
+                position: "relative",
+                width: "100%",
+                maxWidth: 380,
+                backgroundColor: "#ffffff",
+                borderRadius: 20,
+                padding: 24,
+                textAlign: "center",
+                boxShadow: "0 20px 40px rgba(0,0,0,0.2)",
+                border: "1px solid #e5e7eb",
+                zIndex: 61,
+              }}
+            >
+              <div style={{ width: 48, height: 48, borderRadius: 14, backgroundColor: "#fef2f2", color: "#ef4444", margin: "0 auto 14px auto", display: "flex", alignItems: "center", justifyContent: "center", border: "1px solid #fecaca" }}>
+                <AlertTriangle size={24} />
+              </div>
+              <h3 style={{ fontSize: 16, fontWeight: 700, color: "#111827", margin: 0 }}>Delete GST Rate?</h3>
+              <p style={{ fontSize: 12, color: "#6b7280", marginTop: 6, lineHeight: 1.5 }}>
+                Are you sure you want to delete <span style={{ fontWeight: 700, color: "#111827" }}>"{deleteTarget.taxName}"</span> ({deleteTarget.rate}%)? This action cannot be undone.
+              </p>
+
+              <div style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 20 }}>
+                <button
+                  onClick={() => setDeleteTarget(null)}
+                  style={{ flex: 1, height: 38, borderRadius: 10, backgroundColor: "#ffffff", border: "1px solid #d1d5db", color: "#374151", fontSize: 12, fontWeight: 600, cursor: "pointer" }}
+                >
                   Cancel
                 </button>
-                <button type="submit" disabled={submitting} className="btn-accent text-xs px-6 py-2.5 shadow-md shadow-[#FD4B23]/25 disabled:opacity-50 flex items-center gap-2">
-                  {submitting ? <><div className="w-3.5 h-3.5 rounded-full border-2 border-white border-t-transparent animate-spin"></div><span>Saving...</span></> : isEditing ? "Save Changes" : "Create Rate"}
+                <button
+                  onClick={confirmDelete}
+                  disabled={deleting}
+                  style={{ flex: 1, height: 38, borderRadius: 10, border: "none", backgroundColor: "#dc2626", color: "#ffffff", fontSize: 12, fontWeight: 600, cursor: deleting ? "not-allowed" : "pointer", opacity: deleting ? 0.6 : 1 }}
+                >
+                  {deleting ? "Deleting..." : "Yes, Delete"}
                 </button>
               </div>
-            </form>
+            </motion.div>
           </div>
-        </div>
-      )}
-
-      {/* Delete Confirmation Modal */}
-      {deleteTarget && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fade-in">
-          <div className="bg-white w-full max-w-sm rounded-2xl shadow-xl border border-gray-200/60 p-6 text-center animate-scale-in">
-            <div className="w-14 h-14 rounded-2xl bg-red-50 text-red-500 mx-auto mb-4 flex items-center justify-center border border-red-100"><AlertTriangle className="w-7 h-7" /></div>
-            <h3 className="text-base font-extrabold text-gray-900">Delete GST Rate?</h3>
-            <p className="text-xs text-gray-500 mt-1.5 leading-relaxed">
-              Are you sure you want to delete <span className="font-bold text-gray-900">"{deleteTarget.taxName}"</span> ({deleteTarget.rate}%)? This action cannot be undone.
-            </p>
-            <div className="flex items-center gap-3 mt-6">
-              <button onClick={() => setDeleteTarget(null)} className="btn-secondary text-xs flex-1 py-2.5">Cancel</button>
-              <button onClick={confirmDelete} disabled={deleting}
-                className="flex-1 py-2.5 rounded-xl bg-red-600 hover:bg-red-700 text-white font-bold text-xs shadow-md shadow-red-600/20 transition-all disabled:opacity-50">
-                {deleting ? "Deleting..." : "Yes, Delete"}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+        )}
+      </AnimatePresence>
     </div>
   );
 };

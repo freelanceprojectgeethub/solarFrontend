@@ -1,30 +1,36 @@
-import { useState, useEffect } from "react";
-import { 
-  TrendingUp, 
-  Search, 
-  Printer, 
-  DollarSign, 
-  PieChart
-} from "lucide-react";
+import { useState, useEffect, useMemo } from "react";
 import api from "../../utils/api";
+import {
+  TrendingUp,
+  Search,
+  Printer,
+  Download,
+  RefreshCw,
+  X,
+  PieChart,
+} from "lucide-react";
 
 const ProfitMarginReport = () => {
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
 
+  const fetchReport = async (silent = false) => {
+    if (!silent) setLoading(true);
+    else setRefreshing(true);
+    try {
+      const res = await api.get("/reports/profit-margin");
+      setData(res.data.data || []);
+    } catch (err) {
+      console.error("Failed to fetch Profit Margin Report:", err);
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  };
+
   useEffect(() => {
-    const fetchReport = async () => {
-      setLoading(true);
-      try {
-        const res = await api.get("/reports/profit-margin");
-        setData(res.data.data || []);
-      } catch (err) {
-        console.error("Failed to fetch Profit Margin Report:", err);
-      } finally {
-        setLoading(false);
-      }
-    };
     fetchReport();
   }, []);
 
@@ -36,9 +42,11 @@ const ProfitMarginReport = () => {
     }).format(val || 0);
   };
 
-  const filteredData = data.filter((item) =>
-    (item.name || "").toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredData = useMemo(() => {
+    return data.filter((item) =>
+      (item.name || "").toLowerCase().includes(searchQuery.toLowerCase())
+    );
+  }, [data, searchQuery]);
 
   const totalSales = filteredData.reduce((acc, i) => acc + (i.totalSaleAmount || 0), 0);
   const totalCost = filteredData.reduce((acc, i) => acc + (i.totalCost || 0), 0);
@@ -49,139 +57,235 @@ const ProfitMarginReport = () => {
     window.print();
   };
 
+  const exportToCSV = () => {
+    if (filteredData.length === 0) return;
+    const headers = ["Product Item", "Units Sold", "Total Revenue (₹)", "Cost Price Total (₹)", "Gross Profit (₹)", "Profit Margin %"];
+    const rows = filteredData.map((d) => [
+      `"${d.name || ""}"`,
+      d.totalQuantity || 0,
+      d.totalSaleAmount || 0,
+      d.totalCost || 0,
+      d.profit || 0,
+      `"${d.margin || 0}%"`,
+    ]);
+    const csvContent = "data:text/csv;charset=utf-8," + [headers.join(","), ...rows.map((r) => r.join(","))].join("\n");
+    const link = document.createElement("a");
+    link.setAttribute("href", encodeURI(csvContent));
+    link.setAttribute("download", `Profit_Margin_Report_${new Date().toISOString().slice(0, 10)}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   return (
-    <div className="space-y-6 animate-fade-in pb-12">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+    <div style={{ display: "flex", flexDirection: "column", gap: 20 }} className="pb-10 relative">
+      {/* Page Title & Top Actions Bar */}
+      <div style={{ display: "flex", flexDirection: "column", gap: 16 }} className="md:!flex-row md:!items-center md:!justify-between">
         <div>
-          <div className="flex items-center gap-2 text-xs font-semibold text-slate-500 mb-1">
-            <span>Reports</span>
-            <span>/</span>
-            <span className="text-slate-900 font-bold">Profit Margin Analysis</span>
-          </div>
-          <h1 className="text-xl font-bold text-slate-900 tracking-tight flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-emerald-500/10 text-emerald-600 flex items-center justify-center">
-              <TrendingUp className="w-4 h-4" />
-            </div>
-            Item Profit Margin & Profitability Metrics
+          <h1 style={{ fontSize: 24, fontWeight: 700, color: "#111827", letterSpacing: "-0.02em", margin: 0 }}>
+            Profit Margin Analysis
           </h1>
+          <p style={{ fontSize: 13, color: "#6b7280", marginTop: 4, margin: 0 }}>
+            Itemized product profitability margins, sales cost vs revenue, and net ROI contribution.
+          </p>
         </div>
 
-        <div className="flex items-center gap-2.5">
+        <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+          <button
+            onClick={() => fetchReport(true)}
+            disabled={refreshing}
+            style={{
+              height: 38,
+              padding: "0 14px",
+              borderRadius: 10,
+              backgroundColor: "#ffffff",
+              border: "1px solid #e5e7eb",
+              color: "#374151",
+              fontSize: 12,
+              fontWeight: 600,
+              cursor: refreshing ? "not-allowed" : "pointer",
+              display: "flex",
+              alignItems: "center",
+              gap: 8,
+            }}
+          >
+            <RefreshCw size={14} className={refreshing ? "animate-spin text-[#FD4B23]" : ""} />
+            <span>Refresh</span>
+          </button>
+
+          <button
+            onClick={exportToCSV}
+            style={{
+              height: 38,
+              padding: "0 14px",
+              borderRadius: 10,
+              backgroundColor: "#ffffff",
+              border: "1px solid #e5e7eb",
+              color: "#374151",
+              fontSize: 12,
+              fontWeight: 600,
+              cursor: "pointer",
+              display: "flex",
+              alignItems: "center",
+              gap: 8,
+            }}
+          >
+            <Download size={14} color="#FD4B23" />
+            <span>Export CSV</span>
+          </button>
+
           <button
             onClick={handlePrint}
-            className="px-3.5 py-2 rounded-xl border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold shadow-2xs transition-colors flex items-center gap-2"
+            style={{
+              height: 38,
+              padding: "0 14px",
+              borderRadius: 10,
+              backgroundColor: "#ffffff",
+              border: "1px solid #e5e7eb",
+              color: "#374151",
+              fontSize: 12,
+              fontWeight: 600,
+              cursor: "pointer",
+              display: "flex",
+              alignItems: "center",
+              gap: 8,
+            }}
           >
-            <Printer className="w-4 h-4 text-slate-500" />
-            <span>Print Profitability Report</span>
+            <Printer size={14} color="#6b7280" />
+            <span>Print Report</span>
           </button>
         </div>
       </div>
 
-      {/* KPI Stats Strip */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="p-5 rounded-2xl bg-white border border-slate-200/90 shadow-2xs space-y-1">
-          <span className="text-slate-500 text-xs font-semibold uppercase tracking-wider block">Total Billed Revenue</span>
-          <div className="text-xl font-bold text-slate-900 font-mono">{formatCurrency(totalSales)}</div>
-          <p className="text-[11px] text-slate-400">Total gross item sales</p>
+      {/* KPI Summary Cards */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 14 }}>
+        <div style={{ backgroundColor: "#ffffff", borderRadius: 16, padding: "16px 20px", border: "1px solid #e5e7eb" }}>
+          <div style={{ fontSize: 11, fontWeight: 600, color: "#6b7280", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 6 }}>Total Sales Revenue</div>
+          <div style={{ fontSize: 22, fontWeight: 700, color: "#111827" }}>{formatCurrency(totalSales)}</div>
+          <div style={{ fontSize: 11, color: "#9ca3af", marginTop: 2 }}>Gross revenue generated</div>
         </div>
 
-        <div className="p-5 rounded-2xl bg-white border border-slate-200/90 shadow-2xs space-y-1">
-          <span className="text-slate-500 text-xs font-semibold uppercase tracking-wider block">Total Cost of Goods</span>
-          <div className="text-xl font-bold text-slate-700 font-mono">{formatCurrency(totalCost)}</div>
-          <p className="text-[11px] text-slate-400">Procurement cost basis</p>
+        <div style={{ backgroundColor: "#ffffff", borderRadius: 16, padding: "16px 20px", border: "1px solid #e5e7eb" }}>
+          <div style={{ fontSize: 11, fontWeight: 600, color: "#6b7280", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 6 }}>Total Cost of Goods (COGS)</div>
+          <div style={{ fontSize: 22, fontWeight: 700, color: "#6b7280" }}>{formatCurrency(totalCost)}</div>
+          <div style={{ fontSize: 11, color: "#9ca3af", marginTop: 2 }}>Total procurement cost</div>
         </div>
 
-        <div className="p-5 rounded-2xl bg-white border border-slate-200/90 shadow-2xs space-y-1">
-          <span className="text-slate-500 text-xs font-semibold uppercase tracking-wider block">Net Gross Profit</span>
-          <div className="text-xl font-bold text-emerald-600 font-mono">{formatCurrency(totalProfit)}</div>
-          <p className="text-[11px] text-slate-400">Total net profit earnings</p>
+        <div style={{ backgroundColor: "#ffffff", borderRadius: 16, padding: "16px 20px", border: "1px solid #e5e7eb" }}>
+          <div style={{ fontSize: 11, fontWeight: 600, color: "#6b7280", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 6 }}>Net Gross Profit</div>
+          <div style={{ fontSize: 22, fontWeight: 700, color: "#16a34a" }}>{formatCurrency(totalProfit)}</div>
+          <div style={{ fontSize: 11, color: "#16a34a", marginTop: 2 }}>Net margin after cost</div>
         </div>
 
-        <div className="p-5 rounded-2xl bg-white border border-slate-200/90 shadow-2xs space-y-1">
-          <span className="text-slate-500 text-xs font-semibold uppercase tracking-wider block">Overall Profit Margin</span>
-          <div className="text-xl font-bold text-blue-600 font-mono">{overallMargin}%</div>
-          <p className="text-[11px] text-slate-400">Average margin return</p>
+        <div style={{ backgroundColor: "#ffffff", borderRadius: 16, padding: "16px 20px", border: "1px solid #e5e7eb", background: "linear-gradient(135deg, #111113 0%, #1f1f23 100%)", color: "#ffffff" }}>
+          <div style={{ fontSize: 11, fontWeight: 600, color: "#9ca3af", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 6 }}>Overall Profit Margin</div>
+          <div style={{ fontSize: 22, fontWeight: 800, color: "#FD4B23" }}>{overallMargin}%</div>
+          <div style={{ fontSize: 11, color: "#9ca3af", marginTop: 2 }}>Average return percentage</div>
         </div>
       </div>
 
-      {/* Search Bar */}
-      <div className="bg-white rounded-2xl border border-slate-200/90 shadow-xs p-5">
-        <div className="relative max-w-md">
-          <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+      {/* Filter & Search Bar */}
+      <div style={{ backgroundColor: "#ffffff", borderRadius: 16, padding: "14px 18px", border: "1px solid #e5e7eb", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
+        <div style={{ position: "relative", flex: 1, maxWidth: 420 }}>
+          <Search size={15} color="#9ca3af" style={{ position: "absolute", left: 14, top: "50%", transform: "translateY(-50%)" }} />
           <input
             type="text"
-            placeholder="Search item catalog..."
+            placeholder="Search product item..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="input-field text-xs pl-10"
+            style={{
+              width: "100%",
+              height: 38,
+              paddingLeft: 38,
+              paddingRight: searchQuery ? 34 : 14,
+              fontSize: 13,
+              fontFamily: "'Inter', system-ui, sans-serif",
+              backgroundColor: "#f9fafb",
+              border: "1px solid #e5e7eb",
+              borderRadius: 10,
+              outline: "none",
+              color: "#111827",
+            }}
           />
+          {searchQuery && (
+            <button
+              onClick={() => setSearchQuery("")}
+              style={{ position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", color: "#9ca3af", cursor: "pointer", padding: 2 }}
+            >
+              <X size={14} />
+            </button>
+          )}
         </div>
       </div>
 
-      {/* Table Workspace */}
-      <div className="bg-white rounded-2xl border border-slate-200/90 shadow-sm overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse text-xs">
-            <thead>
-              <tr className="bg-slate-50/80 border-b border-slate-200 text-slate-700 font-bold uppercase tracking-wider text-[11px]">
-                <th className="py-4 px-5">Item Catalog Name</th>
-                <th className="py-4 px-4 text-center">Units Sold</th>
-                <th className="py-4 px-4 text-right">Sales Revenue (₹)</th>
-                <th className="py-4 px-4 text-right">Cost (₹)</th>
-                <th className="py-4 px-5 text-right">Profit (₹)</th>
-                <th className="py-4 px-4 text-center">Margin %</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100 bg-white">
-              {loading ? (
-                <tr>
-                  <td colSpan="6" className="py-12 text-center text-slate-500">
-                    <div className="flex items-center justify-center gap-2">
-                      <div className="w-4 h-4 rounded-full border-2 border-emerald-600 border-t-transparent animate-spin"></div>
-                      <span>Calculating profit margins...</span>
-                    </div>
-                  </td>
+      {/* Main Content Table */}
+      {loading ? (
+        <div style={{ backgroundColor: "#ffffff", borderRadius: 16, border: "1px solid #e5e7eb", padding: 60, textAlign: "center" }}>
+          <div style={{ width: 52, height: 52, borderRadius: 14, backgroundColor: "rgba(253,75,35,0.08)", color: "#FD4B23", margin: "0 auto 16px auto", display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <TrendingUp size={24} className="animate-spin" />
+          </div>
+          <h3 style={{ fontSize: 16, fontWeight: 700, color: "#111827", margin: 0 }}>Loading Profit Analysis...</h3>
+          <p style={{ fontSize: 13, color: "#9ca3af", marginTop: 4 }}>Calculating item margins</p>
+        </div>
+      ) : filteredData.length === 0 ? (
+        <div style={{ backgroundColor: "#ffffff", borderRadius: 16, border: "1px solid #e5e7eb", padding: 60, textAlign: "center" }}>
+          <div style={{ width: 56, height: 56, borderRadius: 16, backgroundColor: "#f3f4f6", color: "#9ca3af", margin: "0 auto 16px auto", display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <PieChart size={28} />
+          </div>
+          <h3 style={{ fontSize: 16, fontWeight: 700, color: "#111827", margin: 0 }}>No Product Records</h3>
+          <p style={{ fontSize: 13, color: "#6b7280", maxWidth: 360, margin: "6px auto 20px auto", lineHeight: 1.5 }}>
+            No products matched your search query.
+          </p>
+        </div>
+      ) : (
+        <div style={{ backgroundColor: "#ffffff", borderRadius: 16, border: "1px solid #e5e7eb", overflow: "hidden", boxShadow: "0 1px 3px rgba(0,0,0,0.02)" }}>
+          <div style={{ overflowX: "auto" }}>
+            <table style={{ width: "100%", borderCollapse: "collapse", textAlign: "left" }}>
+              <thead>
+                <tr style={{ backgroundColor: "#f9fafb", borderBottom: "1px solid #e5e7eb", fontSize: 11, fontWeight: 700, color: "#6b7280", textTransform: "uppercase", letterSpacing: "0.05em" }}>
+                  <th style={{ padding: "14px 20px" }}>Product Item</th>
+                  <th style={{ padding: "14px 20px", textAlign: "center" }}>Units Sold</th>
+                  <th style={{ padding: "14px 20px", textAlign: "right" }}>Total Revenue (₹)</th>
+                  <th style={{ padding: "14px 20px", textAlign: "right" }}>Cost Price Total (₹)</th>
+                  <th style={{ padding: "14px 20px", textAlign: "right" }}>Gross Profit (₹)</th>
+                  <th style={{ padding: "14px 20px", textAlign: "center" }}>Margin %</th>
                 </tr>
-              ) : filteredData.length === 0 ? (
-                <tr>
-                  <td colSpan="6" className="py-12 text-center text-slate-500">
-                    <div className="max-w-xs mx-auto text-center space-y-2">
-                      <TrendingUp className="w-8 h-8 text-slate-300 mx-auto" />
-                      <p className="font-semibold text-slate-700">No profit margin data found</p>
-                    </div>
-                  </td>
-                </tr>
-              ) : (
-                filteredData.map((item, index) => (
-                  <tr key={index} className="hover:bg-slate-50/60 transition-colors">
-                    <td className="py-3.5 px-5 font-semibold text-slate-900">{item.name}</td>
-                    <td className="py-3.5 px-4 text-center font-mono font-bold text-slate-700">{item.totalQuantity}</td>
-                    <td className="py-3.5 px-4 text-right font-mono text-slate-700">{formatCurrency(item.totalSaleAmount)}</td>
-                    <td className="py-3.5 px-4 text-right font-mono text-slate-500">{formatCurrency(item.totalCost)}</td>
-                    <td className={`py-3.5 px-5 text-right font-mono font-bold ${
-                      (item.profit || 0) >= 0 ? "text-emerald-600" : "text-red-600"
-                    }`}>
+              </thead>
+              <tbody style={{ fontSize: 13, color: "#374151" }}>
+                {filteredData.map((item, idx) => (
+                  <tr
+                    key={idx}
+                    style={{ borderBottom: "1px solid #f3f4f6", transition: "background-color 0.15s" }}
+                    onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "#f9fafb"}
+                    onMouseLeave={(e) => e.currentTarget.style.backgroundColor = "transparent"}
+                  >
+                    <td style={{ padding: "14px 20px", fontWeight: 700, color: "#111827" }}>
+                      {item.name}
+                    </td>
+                    <td style={{ padding: "14px 20px", textAlign: "center", fontWeight: 600 }}>
+                      {item.totalQuantity}
+                    </td>
+                    <td style={{ padding: "14px 20px", textAlign: "right", fontFamily: "monospace", fontWeight: 700, color: "#111827" }}>
+                      {formatCurrency(item.totalSaleAmount)}
+                    </td>
+                    <td style={{ padding: "14px 20px", textAlign: "right", fontFamily: "monospace", color: "#6b7280" }}>
+                      {formatCurrency(item.totalCost)}
+                    </td>
+                    <td style={{ padding: "14px 20px", textAlign: "right", fontFamily: "monospace", fontWeight: 700, color: item.profit >= 0 ? "#16a34a" : "#dc2626" }}>
                       {formatCurrency(item.profit)}
                     </td>
-                    <td className="py-3.5 px-4 text-center font-mono font-bold">
-                      <span className={`inline-flex items-center px-2.5 py-1 text-[11px] rounded-lg ${
-                        (item.margin || 0) >= 20
-                          ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
-                          : (item.margin || 0) >= 0
-                          ? "bg-amber-50 text-amber-700 border border-amber-200"
-                          : "bg-red-50 text-red-700 border border-red-200"
-                      }`}>
-                        {item.margin || 0}%
+                    <td style={{ padding: "14px 20px", textAlign: "center" }}>
+                      <span style={{ fontSize: 11, fontWeight: 700, padding: "3px 10px", borderRadius: 20, backgroundColor: Number(item.margin) >= 15 ? "#f0fdf4" : Number(item.margin) > 0 ? "#fffbeb" : "#fef2f2", color: Number(item.margin) >= 15 ? "#16a34a" : Number(item.margin) > 0 ? "#d97706" : "#dc2626" }}>
+                        {item.margin}%
                       </span>
                     </td>
                   </tr>
-                ))
-              )}
-            </tbody>
-          </table>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 };

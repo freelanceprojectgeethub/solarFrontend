@@ -1,23 +1,25 @@
 import { useState, useEffect } from "react";
-import { 
-  Receipt, 
-  CheckCircle2, 
-  FileText, 
-  UserCheck, 
-  Wallet, 
+import api from "../../utils/api";
+import { motion, AnimatePresence } from "framer-motion";
+import {
+  Receipt,
+  CheckCircle2,
+  FileText,
+  UserCheck,
+  Wallet,
   Building2,
   TrendingUp,
-  Landmark
+  Landmark,
+  XCircle,
 } from "lucide-react";
 import { Link } from "react-router-dom";
-import api from "../../utils/api";
 
 const ReceiptEntry = () => {
   const [customers, setCustomers] = useState([]);
   const [banks, setBanks] = useState([]);
   const [sales, setSales] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [successToast, setSuccessToast] = useState(false);
+  const [toast, setToast] = useState(null);
 
   const [formData, setFormData] = useState({
     customerId: "",
@@ -29,6 +31,11 @@ const ReceiptEntry = () => {
     saleId: "",
     notes: "",
   });
+
+  const showToast = (message, type = "success") => {
+    setToast({ message, type });
+    setTimeout(() => setToast(null), 3500);
+  };
 
   useEffect(() => {
     const fetchMasterData = async () => {
@@ -43,6 +50,7 @@ const ReceiptEntry = () => {
         setSales(saleRes.data.data || []);
       } catch (err) {
         console.error("Failed to fetch master data for receipt voucher:", err);
+        showToast("Failed to load customers or banks", "error");
       }
     };
     fetchMasterData();
@@ -58,6 +66,13 @@ const ReceiptEntry = () => {
     formData.mode === "upi" ||
     formData.mode === "cheque";
 
+  const selectedCustomerObj = customers.find((c) => c._id === formData.customerId);
+  const filteredSales = sales.filter((s) => {
+    if (!formData.customerId) return true;
+    const custId = s.customerId?._id || s.customerId;
+    return custId === formData.customerId;
+  });
+
   const formatCurrency = (val) => {
     return new Intl.NumberFormat("en-IN", {
       style: "currency",
@@ -69,15 +84,15 @@ const ReceiptEntry = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!formData.customerId) {
-      alert("Please select a customer.");
+      showToast("Please select a customer client", "error");
       return;
     }
     if (!formData.amount || Number(formData.amount) <= 0) {
-      alert("Please enter a valid receipt amount.");
+      showToast("Please enter a valid receipt amount", "error");
       return;
     }
     if (showBankField && !formData.bankId) {
-      alert("Please select a bank account for the selected payment mode.");
+      showToast("Please select a deposit bank account", "error");
       return;
     }
 
@@ -89,15 +104,14 @@ const ReceiptEntry = () => {
         amount: Number(formData.amount),
         date: formData.date,
         mode: formData.mode,
-        bankId: showBankField && formData.bankId ? formData.bankId : undefined,
+        bankId: showBankField ? formData.bankId : undefined,
         referenceNo: formData.referenceNo || undefined,
         saleId: formData.saleId || undefined,
-        notes: formData.notes || undefined,
+        notes: formData.notes,
       };
 
       await api.post("/receipts", payload);
-      setSuccessToast(true);
-      setTimeout(() => setSuccessToast(false), 4000);
+      showToast("Receipt Voucher generated successfully!");
 
       setFormData({
         customerId: "",
@@ -110,282 +124,372 @@ const ReceiptEntry = () => {
         notes: "",
       });
     } catch (error) {
-      alert(error.response?.data?.message || "Failed to save receipt voucher");
+      showToast(error.response?.data?.message || "Failed to record receipt voucher", "error");
     } finally {
       setLoading(false);
     }
   };
 
-  const selectedCustomerObj = customers.find((c) => c._id === formData.customerId);
-
   return (
-    <div className="space-y-6 animate-fade-in pb-12">
-      {/* Toast Notification */}
-      {successToast && (
-        <div className="fixed top-5 right-5 z-50 flex items-center gap-3 px-5 py-3.5 bg-slate-900 text-white rounded-xl shadow-2xl border border-slate-700 animate-slide-in">
-          <CheckCircle2 className="w-5 h-5 text-emerald-400" />
-          <span className="text-xs font-semibold">Customer Receipt Voucher recorded successfully!</span>
-        </div>
-      )}
-
-      {/* Page Breadcrumb & Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="text-xl font-bold text-slate-900 tracking-tight flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-emerald-500/10 text-emerald-600 flex items-center justify-center">
-              <Receipt className="w-4 h-4" />
-            </div>
-            Record Customer Receipt Voucher
-          </h1>
-        </div>
-
-        <div className="flex items-center gap-3">
-          <Link
-            to="/reports/receipt-register"
-            className="px-4 py-2 rounded-xl border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold shadow-2xs transition-colors flex items-center gap-2"
+    <div style={{ display: "flex", flexDirection: "column", gap: 20 }} className="pb-10 relative">
+      {/* Toast Notification Floating Alert */}
+      <AnimatePresence>
+        {toast && (
+          <motion.div
+            initial={{ opacity: 0, y: 20, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 20, scale: 0.95 }}
+            style={{
+              position: "fixed",
+              bottom: 24,
+              right: 24,
+              zIndex: 100,
+              display: "flex",
+              alignItems: "center",
+              gap: 10,
+              padding: "12px 18px",
+              borderRadius: 14,
+              backgroundColor: toast.type === "error" ? "rgba(239,68,68,0.95)" : "rgba(18,18,22,0.95)",
+              color: "#ffffff",
+              fontSize: 13,
+              fontWeight: 500,
+              boxShadow: "0 14px 30px rgba(0,0,0,0.25)",
+              border: toast.type === "error" ? "1px solid rgba(255,255,255,0.2)" : "1px solid rgba(253,75,35,0.3)",
+              backdropFilter: "blur(12px)",
+            }}
           >
-            <FileText className="w-4 h-4 text-slate-500" />
+            {toast.type === "error" ? (
+              <XCircle size={18} color="#ffffff" />
+            ) : (
+              <CheckCircle2 size={18} color="#FD4B23" />
+            )}
+            <span>{toast.message}</span>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Page Title & Top Actions Bar */}
+      <div style={{ display: "flex", flexDirection: "column", gap: 16 }} className="md:!flex-row md:!items-center md:!justify-between">
+        <div>
+          <h1 style={{ fontSize: 24, fontWeight: 700, color: "#111827", letterSpacing: "-0.02em", margin: 0 }}>
+            Record Customer Receipt
+          </h1>
+          <p style={{ fontSize: 13, color: "#6b7280", marginTop: 4, margin: 0 }}>
+            Issue money receipts, record client collections, and clear outstanding sales receivables.
+          </p>
+        </div>
+
+        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          <Link
+            to="/reports/receipt"
+            style={{
+              height: 38,
+              padding: "0 16px",
+              borderRadius: 10,
+              backgroundColor: "#ffffff",
+              border: "1px solid #e5e7eb",
+              color: "#374151",
+              fontSize: 12,
+              fontWeight: 600,
+              textDecoration: "none",
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 8,
+              transition: "all 0.2s",
+            }}
+            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "#f9fafb"}
+            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = "#ffffff"}
+          >
+            <FileText size={14} color="#6b7280" />
             <span>Receipt Register</span>
           </Link>
         </div>
       </div>
 
-      {/* Main Form */}
-      <form onSubmit={handleSubmit} className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        
-        {/* Left Column: Form Details */}
-        <div className="lg:col-span-8 space-y-6">
-          {/* Card 1: Customer & Amount */}
-          <div className="bg-white rounded-2xl border border-slate-200/90 shadow-sm p-6 sm:p-7 space-y-6">
-            <div className="text-xs font-bold uppercase tracking-wider text-slate-700 pb-3 border-b border-slate-100 flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <span className="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
-                <span>1. Client & Receipt Amount</span>
-              </div>
-              <span className="text-[11px] font-mono text-slate-400 font-normal">REC-AUTO-GEN</span>
+      {/* Main Entry Form Card */}
+      <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+        <div style={{ backgroundColor: "#ffffff", borderRadius: 16, border: "1px solid #e5e7eb", padding: 24, display: "flex", flexDirection: "column", gap: 20 }}>
+          <div style={{ fontSize: 12, fontWeight: 700, color: "#374151", textTransform: "uppercase", letterSpacing: "0.05em", paddingBottom: 12, borderBottom: "1px solid #f3f4f6", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <span style={{ width: 8, height: 8, borderRadius: "50%", backgroundColor: "#FD4B23" }} />
+              <span>Customer Receipt Voucher Details</span>
+            </div>
+            <span style={{ fontFamily: "monospace", color: "#9ca3af" }}>REC-AUTO-GEN</span>
+          </div>
+
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 16 }}>
+            {/* Customer */}
+            <div style={{ gridColumn: "span 2" }}>
+              <label style={{ fontSize: 11, fontWeight: 600, color: "#374151", textTransform: "uppercase", letterSpacing: "0.05em", display: "block", marginBottom: 6 }}>
+                Customer Client <span style={{ color: "#ef4444" }}>*</span>
+              </label>
+              <select
+                name="customerId"
+                required
+                value={formData.customerId}
+                onChange={handleChange}
+                style={{
+                  width: "100%",
+                  height: 42,
+                  padding: "0 14px",
+                  fontSize: 13,
+                  fontFamily: "'Inter', system-ui, sans-serif",
+                  backgroundColor: "#f9fafb",
+                  border: "1px solid #e5e7eb",
+                  borderRadius: 10,
+                  outline: "none",
+                  color: "#111827",
+                  fontWeight: 600,
+                  cursor: "pointer",
+                }}
+              >
+                <option value="">Select Customer Client...</option>
+                {customers.map((cust) => (
+                  <option key={cust._id} value={cust._id}>
+                    {cust.name} {cust.gstNumber ? `(GST: ${cust.gstNumber})` : ""}
+                  </option>
+                ))}
+              </select>
+              {selectedCustomerObj && (
+                <div style={{ fontSize: 11, color: "#16a34a", fontWeight: 500, marginTop: 4 }}>
+                  Contact: {selectedCustomerObj.phone || selectedCustomerObj.email || "No direct phone"}
+                </div>
+              )}
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* Customer */}
+            {/* Receipt Amount */}
+            <div>
+              <label style={{ fontSize: 11, fontWeight: 600, color: "#374151", textTransform: "uppercase", letterSpacing: "0.05em", display: "block", marginBottom: 6 }}>
+                Received Amount (₹) <span style={{ color: "#ef4444" }}>*</span>
+              </label>
+              <input
+                type="number"
+                name="amount"
+                required
+                min="1"
+                step="0.01"
+                placeholder="Amount ₹"
+                value={formData.amount}
+                onChange={handleChange}
+                style={{
+                  width: "100%",
+                  height: 42,
+                  padding: "0 14px",
+                  fontSize: 14,
+                  fontWeight: 700,
+                  fontFamily: "'Inter', system-ui, sans-serif",
+                  backgroundColor: "#f9fafb",
+                  border: "1px solid #e5e7eb",
+                  borderRadius: 10,
+                  outline: "none",
+                  color: "#111827",
+                }}
+              />
+            </div>
+
+            {/* Receipt Date */}
+            <div>
+              <label style={{ fontSize: 11, fontWeight: 600, color: "#374151", textTransform: "uppercase", letterSpacing: "0.05em", display: "block", marginBottom: 6 }}>
+                Receipt Date <span style={{ color: "#ef4444" }}>*</span>
+              </label>
+              <input
+                type="date"
+                name="date"
+                required
+                value={formData.date}
+                onChange={handleChange}
+                style={{
+                  width: "100%",
+                  height: 42,
+                  padding: "0 14px",
+                  fontSize: 13,
+                  fontFamily: "'Inter', system-ui, sans-serif",
+                  backgroundColor: "#f9fafb",
+                  border: "1px solid #e5e7eb",
+                  borderRadius: 10,
+                  outline: "none",
+                  color: "#111827",
+                }}
+              />
+            </div>
+
+            {/* Payment Mode */}
+            <div>
+              <label style={{ fontSize: 11, fontWeight: 600, color: "#374151", textTransform: "uppercase", letterSpacing: "0.05em", display: "block", marginBottom: 6 }}>
+                Payment Collection Mode
+              </label>
+              <select
+                name="mode"
+                value={formData.mode}
+                onChange={handleChange}
+                style={{
+                  width: "100%",
+                  height: 42,
+                  padding: "0 14px",
+                  fontSize: 13,
+                  fontFamily: "'Inter', system-ui, sans-serif",
+                  backgroundColor: "#f9fafb",
+                  border: "1px solid #e5e7eb",
+                  borderRadius: 10,
+                  outline: "none",
+                  color: "#111827",
+                  cursor: "pointer",
+                }}
+              >
+                <option value="cash">Cash Collection</option>
+                <option value="bank_transfer">Direct Deposit (NEFT/RTGS/IMPS)</option>
+                <option value="upi">UPI Collection</option>
+                <option value="cheque">Cheque Deposit</option>
+              </select>
+            </div>
+
+            {/* Bank Selector (Conditional) */}
+            {showBankField && (
               <div>
-                <label className="form-label">
-                  <span>Customer / B2B Client Name</span>
-                  <span className="form-label-req">*</span>
+                <label style={{ fontSize: 11, fontWeight: 600, color: "#374151", textTransform: "uppercase", letterSpacing: "0.05em", display: "block", marginBottom: 6 }}>
+                  Deposit Bank Account <span style={{ color: "#ef4444" }}>*</span>
                 </label>
                 <select
-                  name="customerId"
+                  name="bankId"
                   required
-                  value={formData.customerId}
+                  value={formData.bankId}
                   onChange={handleChange}
-                  className="input-field font-medium text-sm cursor-pointer"
+                  style={{
+                    width: "100%",
+                    height: 42,
+                    padding: "0 14px",
+                    fontSize: 13,
+                    fontFamily: "'Inter', system-ui, sans-serif",
+                    backgroundColor: "#f9fafb",
+                    border: "1px solid #e5e7eb",
+                    borderRadius: 10,
+                    outline: "none",
+                    color: "#111827",
+                    cursor: "pointer",
+                  }}
                 >
-                  <option value="">Choose Customer...</option>
-                  {customers.map((c) => (
-                    <option key={c._id} value={c._id}>
-                      {c.name}
+                  <option value="">Select Deposit Bank...</option>
+                  {banks.map((b) => (
+                    <option key={b._id} value={b._id}>
+                      {b.bankName} - A/C: {b.accountNumber} ({b.ifscCode})
                     </option>
                   ))}
                 </select>
-                {selectedCustomerObj && (
-                  <p className="text-[11px] font-semibold text-slate-500 mt-2 flex items-center gap-1.5">
-                    <UserCheck className="w-3.5 h-3.5 text-slate-400" />
-                    <span>{selectedCustomerObj.name} {selectedCustomerObj.gstNumber ? `• GSTIN: ${selectedCustomerObj.gstNumber}` : "• Consumer (B2C)"}</span>
-                  </p>
-                )}
               </div>
+            )}
 
-              {/* Receipt Amount */}
+            {/* Reference Number */}
+            {showBankField && (
               <div>
-                <label className="form-label">
-                  <span>Received Amount (₹)</span>
-                  <span className="form-label-req">*</span>
+                <label style={{ fontSize: 11, fontWeight: 600, color: "#374151", textTransform: "uppercase", letterSpacing: "0.05em", display: "block", marginBottom: 6 }}>
+                  UTR / Reference / Cheque No.
                 </label>
-                <div className="relative">
-                  <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 font-mono font-bold text-sm">₹</span>
-                  <input
-                    type="number"
-                    name="amount"
-                    required
-                    step="0.01"
-                    min="0.01"
-                    value={formData.amount}
-                    onChange={handleChange}
-                    className="input-field font-mono font-bold text-sm pl-8"
-                    placeholder="0.00"
-                  />
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Card 2: Receipt Mode & Banking */}
-          <div className="bg-white rounded-2xl border border-slate-200/90 shadow-sm p-6 sm:p-7 space-y-6">
-            <div className="text-xs font-bold uppercase tracking-wider text-slate-700 pb-3 border-b border-slate-100 flex items-center gap-2">
-              <span className="w-2.5 h-2.5 rounded-full bg-slate-700"></span>
-              <span>2. Mode of Receipt & Deposited Account</span>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* Receipt Date */}
-              <div>
-                <label className="form-label">
-                  <span>Receipt Date</span>
-                  <span className="form-label-req">*</span>
-                </label>
-                <input
-                  type="date"
-                  name="date"
-                  required
-                  value={formData.date}
-                  onChange={handleChange}
-                  className="input-field font-mono"
-                />
-              </div>
-
-              {/* Receipt Mode */}
-              <div>
-                <label className="form-label">
-                  <span>Receipt Mode</span>
-                  <span className="form-label-req">*</span>
-                </label>
-                <select
-                  name="mode"
-                  required
-                  value={formData.mode}
-                  onChange={handleChange}
-                  className="input-field font-medium cursor-pointer"
-                >
-                  <option value="cash">Cash Collection</option>
-                  <option value="bank_transfer">Direct Bank Deposit (NEFT / RTGS)</option>
-                  <option value="upi">UPI / Online Transfer</option>
-                  <option value="cheque">Cheque Received</option>
-                </select>
-              </div>
-
-              {/* Conditional Bank Account Selector */}
-              {showBankField && (
-                <div>
-                  <label className="form-label">
-                    <span>Deposited Company Bank Account</span>
-                    <span className="form-label-req">*</span>
-                  </label>
-                  <select
-                    name="bankId"
-                    required={showBankField}
-                    value={formData.bankId}
-                    onChange={handleChange}
-                    className="input-field font-medium cursor-pointer"
-                  >
-                    <option value="">Select Company Bank Account...</option>
-                    {banks.map((b) => (
-                      <option key={b._id} value={b._id}>
-                        {b.bankName} — A/C: {b.accountNumber} ({b.branch})
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              )}
-
-              {/* UTR / Cheque Ref No */}
-              <div>
-                <label className="form-label">Reference No / UTR / Cheque No</label>
                 <input
                   type="text"
                   name="referenceNo"
+                  placeholder="e.g. UTR9832049823"
                   value={formData.referenceNo}
                   onChange={handleChange}
-                  className="input-field font-mono uppercase text-xs tracking-wider"
-                  placeholder="e.g. UTR-PAYIN-987612 / CHQ-44012"
+                  style={{
+                    width: "100%",
+                    height: 42,
+                    padding: "0 14px",
+                    fontSize: 13,
+                    fontFamily: "monospace",
+                    backgroundColor: "#f9fafb",
+                    border: "1px solid #e5e7eb",
+                    borderRadius: 10,
+                    outline: "none",
+                    color: "#111827",
+                  }}
                 />
               </div>
-            </div>
+            )}
 
-            {/* Against Sale Invoice Dropdown */}
-            <div>
-              <label className="form-label">Link Against Sales Invoice (Optional)</label>
+            {/* Link Sales Invoice */}
+            <div style={{ gridColumn: "span 2" }}>
+              <label style={{ fontSize: 11, fontWeight: 600, color: "#374151", textTransform: "uppercase", letterSpacing: "0.05em", display: "block", marginBottom: 6 }}>
+                Link Sales Invoice (Optional)
+              </label>
               <select
                 name="saleId"
                 value={formData.saleId}
                 onChange={handleChange}
-                className="input-field font-medium cursor-pointer"
+                style={{
+                  width: "100%",
+                  height: 42,
+                  padding: "0 14px",
+                  fontSize: 13,
+                  fontFamily: "'Inter', system-ui, sans-serif",
+                  backgroundColor: "#f9fafb",
+                  border: "1px solid #e5e7eb",
+                  borderRadius: 10,
+                  outline: "none",
+                  color: "#111827",
+                  cursor: "pointer",
+                }}
               >
-                <option value="">Direct Advance / Unlinked Receipt</option>
-                {sales.map((s) => (
+                <option value="">General Receipt (Unlinked / On Account)</option>
+                {filteredSales.map((s) => (
                   <option key={s._id} value={s._id}>
-                    {s.saleNumber} — Billed Total: {formatCurrency(s.totalAmount)}
+                    {s.invoiceNumber || s._id} - Date: {new Date(s.date || s.createdAt).toLocaleDateString()}
                   </option>
                 ))}
               </select>
             </div>
           </div>
-        </div>
 
-        {/* Right Column: Voucher Summary & Submit */}
-        <div className="lg:col-span-4 space-y-6">
-          <div className="bg-white rounded-2xl border border-slate-200/90 shadow-sm p-6 sm:p-7 space-y-6">
-            <div className="text-xs font-bold uppercase tracking-wider text-slate-700 pb-2 border-b border-slate-100 flex items-center gap-2">
-              <span className="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
-              <span>3. Receipt Summary</span>
-            </div>
+          <div>
+            <label style={{ fontSize: 11, fontWeight: 600, color: "#374151", textTransform: "uppercase", letterSpacing: "0.05em", display: "block", marginBottom: 6 }}>
+              Voucher Remarks / Notes
+            </label>
+            <textarea
+              name="notes"
+              rows="2"
+              value={formData.notes}
+              onChange={handleChange}
+              placeholder="Collection notes, advance payment reference..."
+              style={{
+                width: "100%",
+                padding: "10px 14px",
+                fontSize: 13,
+                fontFamily: "'Inter', system-ui, sans-serif",
+                backgroundColor: "#f9fafb",
+                border: "1px solid #e5e7eb",
+                borderRadius: 10,
+                outline: "none",
+                color: "#111827",
+                resize: "vertical",
+              }}
+            />
+          </div>
 
-            <div className="p-5 rounded-2xl bg-slate-900 text-white space-y-4 shadow-xl shadow-slate-900/10">
-              <div className="flex items-center justify-between text-xs text-slate-400 border-b border-slate-800 pb-3">
-                <span>Voucher Type</span>
-                <span className="font-semibold text-emerald-400 uppercase tracking-wider">Credit Receipt</span>
-              </div>
-
-              <div className="space-y-1">
-                <span className="text-[11px] text-slate-400 uppercase font-medium tracking-wider block">Net Received Amount</span>
-                <div className="text-2xl font-bold font-mono text-emerald-400">
-                  {formatCurrency(Number(formData.amount))}
-                </div>
-              </div>
-
-              <div className="pt-2 border-t border-slate-800 text-[11px] text-slate-400 space-y-1.5 font-medium">
-                <div className="flex justify-between">
-                  <span>Customer:</span>
-                  <span className="text-white font-semibold">{selectedCustomerObj?.name || "Not Selected"}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Method:</span>
-                  <span className="text-white font-semibold uppercase">{formData.mode.replace("_", " ")}</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Notes Textarea */}
-            <div>
-              <label className="form-label">Notes & Internal Memo</label>
-              <textarea
-                name="notes"
-                rows="4"
-                value={formData.notes}
-                onChange={handleChange}
-                className="input-field text-xs"
-                placeholder="Receipt collection notes, customer remarks..."
-              ></textarea>
-            </div>
-
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", paddingTop: 8 }}>
             <button
               type="submit"
               disabled={loading}
-              className="w-full btn-accent bg-emerald-600 hover:bg-emerald-700 py-3.5 text-xs font-bold shadow-lg shadow-emerald-600/25 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+              style={{
+                height: 44,
+                padding: "0 28px",
+                borderRadius: 12,
+                border: "none",
+                background: "linear-gradient(135deg, #FD4B23 0%, #e5401e 100%)",
+                color: "#ffffff",
+                fontSize: 14,
+                fontWeight: 600,
+                cursor: loading ? "not-allowed" : "pointer",
+                opacity: loading ? 0.6 : 1,
+                boxShadow: "0 4px 14px rgba(253,75,35,0.3)",
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 8,
+              }}
             >
-              {loading ? (
-                <>
-                  <div className="w-4 h-4 rounded-full border-2 border-white border-t-transparent animate-spin"></div>
-                  <span>Recording Receipt...</span>
-                </>
-              ) : (
-                <>
-                  <CheckCircle2 className="w-4 h-4" />
-                  <span>Save & Issue Receipt Voucher</span>
-                </>
-              )}
+              <CheckCircle2 size={18} />
+              <span>{loading ? "Processing..." : "Generate Receipt Voucher"}</span>
             </button>
           </div>
         </div>
-
       </form>
     </div>
   );

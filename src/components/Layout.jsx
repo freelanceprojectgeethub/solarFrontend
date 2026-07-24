@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { NavLink, useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   LayoutDashboard,
   Building2,
@@ -43,7 +44,6 @@ import {
   User as UserIcon,
   ChevronDown,
   Settings,
-  Zap
 } from "lucide-react";
 
 const Layout = ({ children }) => {
@@ -130,7 +130,6 @@ const Layout = ({ children }) => {
     },
   ];
 
-  // Helper to format breadcrumb title based on current path
   const getPageTitle = () => {
     const currentPath = location.pathname;
     for (const group of navGroups) {
@@ -142,7 +141,6 @@ const Layout = ({ children }) => {
     return "Solar SaaS";
   };
 
-  // Get current breadcrumb group
   const getBreadcrumbGroup = () => {
     const currentPath = location.pathname;
     for (const group of navGroups) {
@@ -154,54 +152,140 @@ const Layout = ({ children }) => {
   };
 
   return (
-    <div className="flex h-screen overflow-hidden bg-[#EDEEF1] p-2.5 gap-2.5">
-      {/* Sidebar */}
+    <div
+      style={{
+        display: "flex",
+        height: "100vh",
+        overflow: "hidden",
+        backgroundColor: "#09090c",
+        padding: "10px",
+        gap: "10px",
+        fontFamily: "'Inter', system-ui, -apple-system, sans-serif",
+      }}
+    >
+      {/* ── SIDEBAR ── */}
       <aside
-        className={`bg-[#111113] text-white flex flex-col h-full flex-shrink-0 transition-all duration-300 ease-in-out relative z-30 rounded-2xl overflow-hidden ${
-          collapsed ? "w-[72px]" : "w-[252px]"
-        }`}
+        style={{
+          width: collapsed ? 72 : 252,
+          minWidth: collapsed ? 72 : 252,
+          height: "100%",
+          display: "flex",
+          flexDirection: "column",
+          borderRadius: 20,
+          background: "linear-gradient(180deg, rgba(18,18,22,0.96) 0%, rgba(13,13,17,0.98) 100%)",
+          backdropFilter: "blur(40px)",
+          WebkitBackdropFilter: "blur(40px)",
+          border: "1px solid rgba(255,255,255,0.05)",
+          boxShadow: "0 0 0 0.5px rgba(255,255,255,0.03) inset, 0 20px 40px -10px rgba(0,0,0,0.5)",
+          transition: "width 0.3s cubic-bezier(0.22, 1, 0.36, 1), min-width 0.3s cubic-bezier(0.22, 1, 0.36, 1)",
+          position: "relative",
+          zIndex: 30,
+          overflow: "hidden",
+        }}
       >
         {/* Brand Header */}
-        <div className={`h-[60px] flex items-center justify-between border-b border-white/[0.06] ${collapsed ? "px-3" : "px-5"}`}>
-          <div className="flex items-center gap-3 overflow-hidden">
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-[#FD4B23] to-[#FF8A5C] flex items-center justify-center shadow-lg shadow-[#FD4B23]/20 flex-shrink-0">
-              <Sun className="w-5 h-5 text-white" />
+        <div
+          style={{
+            height: 64,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            padding: collapsed ? "0 16px" : "0 20px",
+            borderBottom: "1px solid rgba(255,255,255,0.04)",
+            flexShrink: 0,
+          }}
+        >
+          <div style={{ display: "flex", itemsCenter: "center", gap: 10, overflow: "hidden" }}>
+            <div style={{ position: "relative", flexShrink: 0 }}>
+              <div style={{ position: "absolute", inset: -8, background: "radial-gradient(circle, rgba(253,75,35,0.18) 0%, transparent 70%)", borderRadius: 16 }} />
+              <div
+                style={{
+                  position: "relative",
+                  width: 36,
+                  height: 36,
+                  borderRadius: 10,
+                  background: "linear-gradient(135deg, #FD4B23, #e5401e)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  boxShadow: "0 4px 14px rgba(253,75,35,0.25)",
+                }}
+              >
+                <Sun size={18} color="#fff" strokeWidth={2.2} />
+              </div>
             </div>
             {!collapsed && (
-              <div className="flex flex-col leading-tight">
-                <span className="text-[15px] font-bold tracking-tight text-white">
+              <div style={{ display: "flex", flexDirection: "column", lineHeight: 1 }}>
+                <span style={{ fontSize: 15, fontWeight: 700, color: "#fafafa", letterSpacing: "-0.02em" }}>
                   Solar SaaS
                 </span>
-                <span className="text-[9px] font-bold text-[#FD4B23] tracking-[0.15em] uppercase">
+                <span style={{ fontSize: 8.5, fontWeight: 600, color: "rgba(253,75,35,0.75)", letterSpacing: "0.18em", textTransform: "uppercase", marginTop: 3 }}>
                   Enterprise
                 </span>
               </div>
             )}
           </div>
 
-          {/* Collapse Toggle Button */}
+          {/* Collapse Button */}
           {!collapsed && (
             <button
-              onClick={() => setCollapsed(!collapsed)}
-              className="p-1 rounded-md text-white/30 hover:text-white/70 hover:bg-white/[0.06] transition-colors hidden md:flex items-center justify-center"
+              onClick={() => setCollapsed(true)}
+              style={{
+                width: 28,
+                height: 28,
+                borderRadius: 8,
+                border: "1px solid rgba(255,255,255,0.06)",
+                backgroundColor: "rgba(255,255,255,0.025)",
+                color: "#71717a",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                cursor: "pointer",
+                transition: "all 0.2s",
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = "rgba(255,255,255,0.06)";
+                e.currentTarget.style.color = "#fafafa";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = "rgba(255,255,255,0.025)";
+                e.currentTarget.style.color = "#71717a";
+              }}
               title="Collapse Sidebar"
             >
-              <ChevronLeft className="w-4 h-4" />
+              <ChevronLeft size={15} strokeWidth={1.8} />
             </button>
           )}
         </div>
 
         {/* Scrollable Nav Items */}
-        <nav className={`flex-1 py-4 overflow-y-auto sidebar-scroll ${collapsed ? "px-2" : "px-3"}`}>
-          <div className="space-y-5">
+        <nav
+          className="sidebar-scroll"
+          style={{
+            flex: 1,
+            padding: collapsed ? "16px 8px" : "16px 12px",
+            overflowY: "auto",
+          }}
+        >
+          <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
             {navGroups.map((group, idx) => (
               <div key={idx}>
                 {!collapsed && (
-                  <h2 className="px-3 text-[10px] font-bold text-white/25 uppercase tracking-[0.12em] mb-1.5">
+                  <h2
+                    style={{
+                      padding: "0 10px",
+                      fontSize: 10,
+                      fontWeight: 600,
+                      color: "#52525b",
+                      textTransform: "uppercase",
+                      letterSpacing: "0.12em",
+                      marginBottom: 6,
+                    }}
+                  >
                     {group.title}
                   </h2>
                 )}
-                <div className="space-y-0.5">
+                <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
                   {group.items.map((item) => {
                     const Icon = item.icon;
                     return (
@@ -211,13 +295,13 @@ const Layout = ({ children }) => {
                         end={item.exact}
                         className={({ isActive }) =>
                           `sidebar-link ${isActive ? "active" : ""} ${
-                            collapsed ? "justify-center px-0 py-2" : ""
+                            collapsed ? "justify-center !px-0 !py-2.5" : ""
                           }`
                         }
                         title={collapsed ? item.name : undefined}
                       >
-                        <Icon className="w-[18px] h-[18px] flex-shrink-0" />
-                        {!collapsed && <span className="truncate">{item.name}</span>}
+                        <Icon size={17} strokeWidth={1.8} style={{ flexShrink: 0 }} />
+                        {!collapsed && <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{item.name}</span>}
                       </NavLink>
                     );
                   })}
@@ -228,151 +312,392 @@ const Layout = ({ children }) => {
         </nav>
 
         {/* User Footer */}
-        <div className={`border-t border-white/[0.06] ${collapsed ? "p-2" : "p-3"}`}>
+        <div
+          style={{
+            padding: collapsed ? 8 : 12,
+            borderTop: "1px solid rgba(255,255,255,0.04)",
+            flexShrink: 0,
+          }}
+        >
           {!collapsed ? (
-            <div className="flex items-center justify-between p-2.5 rounded-xl bg-white/[0.04]">
-              <div className="flex items-center gap-2.5 overflow-hidden">
-                <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#FD4B23] to-[#FF8A5C] text-white flex items-center justify-center font-bold text-xs flex-shrink-0">
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                padding: "10px 12px",
+                borderRadius: 14,
+                backgroundColor: "rgba(255,255,255,0.03)",
+                border: "1px solid rgba(255,255,255,0.05)",
+              }}
+            >
+              <div style={{ display: "flex", alignItems: "center", gap: 10, overflow: "hidden" }}>
+                <div
+                  style={{
+                    width: 32,
+                    height: 32,
+                    borderRadius: 10,
+                    background: "linear-gradient(135deg, #FD4B23, #e5401e)",
+                    color: "#fff",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    fontWeight: 700,
+                    fontSize: 12,
+                    flexShrink: 0,
+                    boxShadow: "0 2px 8px rgba(253,75,35,0.25)",
+                  }}
+                >
                   {user?.name ? user.name.charAt(0).toUpperCase() : "A"}
                 </div>
-                <div className="flex flex-col truncate leading-tight">
-                  <span className="text-[12px] font-semibold text-white/90 truncate">
+                <div style={{ display: "flex", flexDirection: "column", overflow: "hidden", lineHeight: 1.3 }}>
+                  <span style={{ fontSize: 12, fontWeight: 600, color: "rgba(250,250,250,0.92)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                     {user?.name || "Lalit Agrawal"}
                   </span>
-                  <span className="text-[10px] text-white/35 truncate">
+                  <span style={{ fontSize: 10, color: "#52525b", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                     {user?.roleId?.name || "Super Admin"}
                   </span>
                 </div>
               </div>
               <button
                 onClick={handleLogout}
-                className="p-1.5 rounded-lg text-white/30 hover:text-red-400 hover:bg-red-500/10 transition-colors"
+                style={{
+                  width: 28,
+                  height: 28,
+                  borderRadius: 8,
+                  border: "none",
+                  backgroundColor: "transparent",
+                  color: "#52525b",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  cursor: "pointer",
+                  transition: "all 0.2s",
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = "rgba(239,68,68,0.1)";
+                  e.currentTarget.style.color = "#f87171";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = "transparent";
+                  e.currentTarget.style.color = "#52525b";
+                }}
                 title="Logout"
               >
-                <LogOut className="w-3.5 h-3.5" />
+                <LogOut size={14} strokeWidth={1.8} />
               </button>
             </div>
           ) : (
             <button
               onClick={() => setCollapsed(false)}
-              className="w-full py-2 flex justify-center rounded-lg text-white/30 hover:text-white/70 hover:bg-white/[0.06] transition-colors"
+              style={{
+                width: "100%",
+                padding: "8px 0",
+                display: "flex",
+                justifyContent: "center",
+                borderRadius: 10,
+                border: "none",
+                backgroundColor: "rgba(255,255,255,0.025)",
+                color: "#71717a",
+                cursor: "pointer",
+                transition: "all 0.2s",
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = "rgba(255,255,255,0.06)";
+                e.currentTarget.style.color = "#fafafa";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = "rgba(255,255,255,0.025)";
+                e.currentTarget.style.color = "#71717a";
+              }}
               title="Expand Sidebar"
             >
-              <ChevronRight className="w-4 h-4" />
+              <ChevronRight size={16} strokeWidth={1.8} />
             </button>
           )}
         </div>
       </aside>
 
-      {/* Main Container Area */}
-      <div className="flex-1 flex flex-col h-full overflow-hidden bg-white rounded-2xl border border-gray-200/50">
+      {/* ── MAIN CONTENT AREA ── */}
+      <div
+        style={{
+          flex: 1,
+          display: "flex",
+          flexDirection: "column",
+          height: "100%",
+          overflow: "hidden",
+          backgroundColor: "#ffffff",
+          borderRadius: 20,
+          border: "1px solid rgba(0,0,0,0.06)",
+          boxShadow: "0 10px 30px -10px rgba(0,0,0,0.05)",
+        }}
+      >
         {/* Top Header Bar */}
-        <header className="h-[56px] bg-white border-b border-gray-100 px-6 flex items-center justify-between sticky top-0 z-20 rounded-t-2xl flex-shrink-0">
+        <header
+          style={{
+            height: 56,
+            backgroundColor: "#ffffff",
+            borderBottom: "1px solid #f1f1f4",
+            padding: "0 24px",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            position: "sticky",
+            top: 0,
+            zIndex: 20,
+            borderTopLeftRadius: 20,
+            borderTopRightRadius: 20,
+            flexShrink: 0,
+          }}
+        >
           {/* Left: Breadcrumb & Title */}
-          <div className="flex items-center gap-2.5">
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
             {getBreadcrumbGroup() && (
               <>
-                <span className="text-xs font-medium text-gray-400">
+                <span style={{ fontSize: 12, fontWeight: 500, color: "#9ca3af" }}>
                   {getBreadcrumbGroup()}
                 </span>
-                <ChevronRight className="w-3 h-3 text-gray-300" />
+                <ChevronRight size={13} color="#d1d5db" />
               </>
             )}
-            <h1 className="text-sm font-semibold text-gray-900 tracking-tight">
+            <h1 style={{ fontSize: 14, fontWeight: 600, color: "#111827", letterSpacing: "-0.01em", margin: 0 }}>
               {getPageTitle()}
             </h1>
           </div>
 
           {/* Header Right Actions */}
-          <div className="flex items-center gap-2.5">
-            {/* Quick Search Input */}
-            <div className="relative hidden md:block">
-              <Search className="w-3.5 h-3.5 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
+          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+            {/* Quick Search */}
+            <div style={{ position: "relative" }} className="hidden md:block">
+              <Search size={14} color="#9ca3af" style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)" }} />
               <input
                 type="text"
                 placeholder="Search..."
-                className="pl-8 pr-4 py-1.5 text-xs bg-gray-50 border border-gray-200/80 rounded-lg focus:outline-none focus:border-[#FD4B23]/40 focus:bg-white focus:ring-1 focus:ring-[#FD4B23]/10 w-48 transition-all font-medium text-gray-600 placeholder:text-gray-400"
+                style={{
+                  width: 200,
+                  height: 34,
+                  paddingLeft: 34,
+                  paddingRight: 14,
+                  fontSize: 12,
+                  fontFamily: "'Inter', system-ui, sans-serif",
+                  fontWeight: 500,
+                  backgroundColor: "#f9fafb",
+                  border: "1px solid #e5e7eb",
+                  borderRadius: 10,
+                  outline: "none",
+                  color: "#374151",
+                  transition: "all 0.2s",
+                }}
+                onFocus={(e) => {
+                  e.target.style.borderColor = "rgba(253,75,35,0.4)";
+                  e.target.style.backgroundColor = "#ffffff";
+                  e.target.style.boxShadow = "0 0 0 3px rgba(253,75,35,0.08)";
+                }}
+                onBlur={(e) => {
+                  e.target.style.borderColor = "#e5e7eb";
+                  e.target.style.backgroundColor = "#f9fafb";
+                  e.target.style.boxShadow = "none";
+                }}
               />
             </div>
 
             {/* Notification Icon */}
-            <button className="p-1.5 rounded-lg text-gray-400 hover:bg-gray-50 hover:text-gray-600 transition-colors relative">
-              <Bell className="w-[18px] h-[18px]" />
-              <span className="w-1.5 h-1.5 bg-[#FD4B23] rounded-full absolute top-1.5 right-1.5 ring-2 ring-white"></span>
+            <button
+              style={{
+                width: 34,
+                height: 34,
+                borderRadius: 10,
+                border: "1px solid #f3f4f6",
+                backgroundColor: "#ffffff",
+                color: "#6b7280",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                cursor: "pointer",
+                position: "relative",
+                transition: "all 0.2s",
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = "#f9fafb";
+                e.currentTarget.style.color = "#111827";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = "#ffffff";
+                e.currentTarget.style.color = "#6b7280";
+              }}
+            >
+              <Bell size={16} />
+              <span style={{ width: 6, height: 6, backgroundColor: "#FD4B23", borderRadius: "50%", position: "absolute", top: 7, right: 7, border: "2px solid #ffffff" }} />
             </button>
 
-            <div className="h-5 w-px bg-gray-200/80"></div>
+            <div style={{ height: 20, width: 1, backgroundColor: "#e5e7eb" }} />
 
             {/* Company Badge */}
-            <div className="hidden lg:flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-gray-50 border border-gray-200/60 text-[11px] font-semibold text-gray-600">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+            <div className="hidden lg:flex" style={{ alignItems: "center", gap: 6, padding: "4px 10px", borderRadius: 8, backgroundColor: "#f9fafb", border: "1px solid #e5e7eb", fontSize: 11, fontWeight: 600, color: "#374151" }}>
+              <span style={{ width: 6, height: 6, borderRadius: "50%", backgroundColor: "#10b981" }} />
               <span>Lalit Solar</span>
             </div>
 
             {/* Profile Dropdown */}
-            <div className="relative" ref={dropdownRef}>
+            <div style={{ position: "relative" }} ref={dropdownRef}>
               <button
                 onClick={() => setProfileDropdown(!profileDropdown)}
-                className="flex items-center gap-1.5 p-1 rounded-lg hover:bg-gray-50 transition-colors focus:outline-none"
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 6,
+                  padding: 4,
+                  borderRadius: 10,
+                  border: "none",
+                  backgroundColor: "transparent",
+                  cursor: "pointer",
+                  transition: "all 0.2s",
+                }}
               >
-                <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-[#FD4B23] to-[#FF8A5C] text-white flex items-center justify-center font-bold text-[10px]">
+                <div
+                  style={{
+                    width: 30,
+                    height: 30,
+                    borderRadius: 9,
+                    background: "linear-gradient(135deg, #FD4B23, #e5401e)",
+                    color: "#fff",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    fontWeight: 700,
+                    fontSize: 11,
+                    boxShadow: "0 2px 6px rgba(253,75,35,0.25)",
+                  }}
+                >
                   {user?.name ? user.name.charAt(0).toUpperCase() : "L"}
                 </div>
-                <ChevronDown className={`w-3 h-3 text-gray-400 transition-transform duration-200 ${profileDropdown ? "rotate-180" : ""}`} />
+                <ChevronDown size={13} color="#9ca3af" style={{ transition: "transform 0.2s", transform: profileDropdown ? "rotate(180deg)" : "rotate(0deg)" }} />
               </button>
 
-              {profileDropdown && (
-                <div className="absolute right-0 mt-2 w-52 bg-white rounded-xl shadow-lg shadow-black/8 border border-gray-200/80 py-1 z-50 animate-scale-in">
-                  <div className="px-4 py-3 border-b border-gray-100">
-                    <p className="text-xs font-bold text-gray-900 truncate">
-                      {user?.name || "Lalit Agrawal"}
-                    </p>
-                    <p className="text-[10px] text-gray-400 truncate mt-0.5">
-                      {user?.email || "lalit@solar.com"}
-                    </p>
-                  </div>
-                  <div className="py-1">
-                    <button
-                      onClick={() => {
-                        setProfileDropdown(false);
-                        navigate("/users");
-                      }}
-                      className="w-full text-left px-4 py-2 text-xs text-gray-600 hover:bg-gray-50 flex items-center gap-2.5 font-medium"
-                    >
-                      <UserIcon className="w-3.5 h-3.5 text-gray-400" />
-                      <span>My Account</span>
-                    </button>
-                    <button
-                      onClick={() => {
-                        setProfileDropdown(false);
-                        navigate("/roles");
-                      }}
-                      className="w-full text-left px-4 py-2 text-xs text-gray-600 hover:bg-gray-50 flex items-center gap-2.5 font-medium"
-                    >
-                      <Settings className="w-3.5 h-3.5 text-gray-400" />
-                      <span>Settings</span>
-                    </button>
-                  </div>
-                  <div className="border-t border-gray-100 pt-1">
-                    <button
-                      onClick={() => {
-                        setProfileDropdown(false);
-                        handleLogout();
-                      }}
-                      className="w-full text-left px-4 py-2 text-xs text-red-600 hover:bg-red-50 flex items-center gap-2.5 font-medium"
-                    >
-                      <LogOut className="w-3.5 h-3.5 text-red-400" />
-                      <span>Sign out</span>
-                    </button>
-                  </div>
-                </div>
-              )}
+              <AnimatePresence>
+                {profileDropdown && (
+                  <motion.div
+                    initial={{ opacity: 0, scale: 0.95, y: -4 }}
+                    animate={{ opacity: 1, scale: 1, y: 0 }}
+                    exit={{ opacity: 0, scale: 0.95, y: -4 }}
+                    transition={{ duration: 0.15, ease: "easeOut" }}
+                    style={{
+                      position: "absolute",
+                      right: 0,
+                      marginTop: 8,
+                      width: 210,
+                      backgroundColor: "#ffffff",
+                      borderRadius: 14,
+                      boxShadow: "0 12px 30px -5px rgba(0,0,0,0.12), 0 4px 10px -2px rgba(0,0,0,0.05)",
+                      border: "1px solid #e5e7eb",
+                      padding: "4px 0",
+                      zIndex: 50,
+                    }}
+                  >
+                    <div style={{ padding: "10px 14px", borderBottom: "1px solid #f3f4f6" }}>
+                      <p style={{ fontSize: 12, fontWeight: 700, color: "#111827", margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                        {user?.name || "Lalit Agrawal"}
+                      </p>
+                      <p style={{ fontSize: 10, color: "#9ca3af", margin: "2px 0 0 0", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                        {user?.email || "lalit@solar.com"}
+                      </p>
+                    </div>
+                    <div style={{ padding: "4px 0" }}>
+                      <button
+                        onClick={() => {
+                          setProfileDropdown(false);
+                          navigate("/users");
+                        }}
+                        style={{
+                          width: "100%",
+                          textAlign: "left",
+                          padding: "8px 14px",
+                          fontSize: 12,
+                          color: "#374151",
+                          border: "none",
+                          backgroundColor: "transparent",
+                          cursor: "pointer",
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 10,
+                          fontWeight: 500,
+                        }}
+                        onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "#f9fafb"}
+                        onMouseLeave={(e) => e.currentTarget.style.backgroundColor = "transparent"}
+                      >
+                        <UserIcon size={14} color="#9ca3af" />
+                        <span>My Account</span>
+                      </button>
+                      <button
+                        onClick={() => {
+                          setProfileDropdown(false);
+                          navigate("/roles");
+                        }}
+                        style={{
+                          width: "100%",
+                          textAlign: "left",
+                          padding: "8px 14px",
+                          fontSize: 12,
+                          color: "#374151",
+                          border: "none",
+                          backgroundColor: "transparent",
+                          cursor: "pointer",
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 10,
+                          fontWeight: 500,
+                        }}
+                        onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "#f9fafb"}
+                        onMouseLeave={(e) => e.currentTarget.style.backgroundColor = "transparent"}
+                      >
+                        <Settings size={14} color="#9ca3af" />
+                        <span>Settings</span>
+                      </button>
+                    </div>
+                    <div style={{ borderTop: "1px solid #f3f4f6", paddingTop: 4 }}>
+                      <button
+                        onClick={() => {
+                          setProfileDropdown(false);
+                          handleLogout();
+                        }}
+                        style={{
+                          width: "100%",
+                          textAlign: "left",
+                          padding: "8px 14px",
+                          fontSize: 12,
+                          color: "#ef4444",
+                          border: "none",
+                          backgroundColor: "transparent",
+                          cursor: "pointer",
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 10,
+                          fontWeight: 500,
+                        }}
+                        onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "#fef2f2"}
+                        onMouseLeave={(e) => e.currentTarget.style.backgroundColor = "transparent"}
+                      >
+                        <LogOut size={14} color="#f87171" />
+                        <span>Sign out</span>
+                      </button>
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
           </div>
         </header>
 
         {/* Dynamic Page Content */}
-        <main className="flex-1 bg-[#F6F7F9] px-5 py-6 lg:px-8 lg:py-8 overflow-y-auto custom-scrollbar animate-fade-in">
+        <main
+          className="custom-scrollbar"
+          style={{
+            flex: 1,
+            backgroundColor: "#F6F7F9",
+            padding: "24px 28px",
+            overflowY: "auto",
+          }}
+        >
           {children}
         </main>
       </div>

@@ -1,30 +1,34 @@
 import { useState, useEffect } from "react";
-import { 
-  FileSpreadsheet, 
-  Printer, 
-  Percent, 
-  TrendingUp, 
-  ShieldCheck, 
-  ArrowUpRight
-} from "lucide-react";
 import api from "../../utils/api";
+import {
+  Percent,
+  Printer,
+  Download,
+  RefreshCw,
+  ShieldCheck,
+  Building2,
+} from "lucide-react";
 
 const GstSummary = () => {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+
+  const fetchReport = async (silent = false) => {
+    if (!silent) setLoading(true);
+    else setRefreshing(true);
+    try {
+      const res = await api.get("/reports/gst-summary");
+      setData(res.data.data || null);
+    } catch (err) {
+      console.error("Failed to fetch GST Summary:", err);
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  };
 
   useEffect(() => {
-    const fetchReport = async () => {
-      setLoading(true);
-      try {
-        const res = await api.get("/reports/gst-summary");
-        setData(res.data.data || null);
-      } catch (err) {
-        console.error("Failed to fetch GST Summary:", err);
-      } finally {
-        setLoading(false);
-      }
-    };
     fetchReport();
   }, []);
 
@@ -45,102 +49,159 @@ const GstSummary = () => {
   const totalIgst = data?.totalIgst || 0;
   const totalGst = data?.totalGST || 0;
 
+  const exportToCSV = () => {
+    if (!data) return;
+    const headers = ["Tax Type", "Tax Category", "Amount (₹)"];
+    const rows = [
+      ["CGST", "Central Goods & Services Tax", totalCgst],
+      ["SGST", "State Goods & Services Tax", totalSgst],
+      ["IGST", "Integrated Goods & Services Tax", totalIgst],
+      ["Total GST Liability", "Net Tax Combined", totalGst],
+    ];
+    const csvContent = "data:text/csv;charset=utf-8," + [headers.join(","), ...rows.map((r) => r.join(","))].join("\n");
+    const link = document.createElement("a");
+    link.setAttribute("href", encodeURI(csvContent));
+    link.setAttribute("download", `GST_Tax_Summary_${new Date().toISOString().slice(0, 10)}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   return (
-    <div className="space-y-6 animate-fade-in pb-12">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+    <div style={{ display: "flex", flexDirection: "column", gap: 20 }} className="pb-10 relative">
+      {/* Page Title & Top Actions Bar */}
+      <div style={{ display: "flex", flexDirection: "column", gap: 16 }} className="md:!flex-row md:!items-center md:!justify-between">
         <div>
-          <div className="flex items-center gap-2 text-xs font-semibold text-slate-500 mb-1">
-            <span>Reports</span>
-            <span>/</span>
-            <span className="text-slate-900 font-bold">GST Summary</span>
-          </div>
-          <h1 className="text-xl font-bold text-slate-900 tracking-tight flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-orange-500/10 text-orange-600 flex items-center justify-center">
-              <Percent className="w-4 h-4" />
-            </div>
-            GST Tax Liability & Summary Breakdown
+          <h1 style={{ fontSize: 24, fontWeight: 700, color: "#111827", letterSpacing: "-0.02em", margin: 0 }}>
+            GST Tax Summary & Compliance
           </h1>
+          <p style={{ fontSize: 13, color: "#6b7280", marginTop: 4, margin: 0 }}>
+            Calculated tax liability breakdown across CGST, SGST, and IGST for GSTR-1 & GSTR-3B filings.
+          </p>
         </div>
 
-        <div className="flex items-center gap-2.5">
+        <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+          <button
+            onClick={() => fetchReport(true)}
+            disabled={refreshing}
+            style={{
+              height: 38,
+              padding: "0 14px",
+              borderRadius: 10,
+              backgroundColor: "#ffffff",
+              border: "1px solid #e5e7eb",
+              color: "#374151",
+              fontSize: 12,
+              fontWeight: 600,
+              cursor: refreshing ? "not-allowed" : "pointer",
+              display: "flex",
+              alignItems: "center",
+              gap: 8,
+            }}
+          >
+            <RefreshCw size={14} className={refreshing ? "animate-spin text-[#FD4B23]" : ""} />
+            <span>Refresh</span>
+          </button>
+
+          <button
+            onClick={exportToCSV}
+            style={{
+              height: 38,
+              padding: "0 14px",
+              borderRadius: 10,
+              backgroundColor: "#ffffff",
+              border: "1px solid #e5e7eb",
+              color: "#374151",
+              fontSize: 12,
+              fontWeight: 600,
+              cursor: "pointer",
+              display: "flex",
+              alignItems: "center",
+              gap: 8,
+            }}
+          >
+            <Download size={14} color="#FD4B23" />
+            <span>Export CSV</span>
+          </button>
+
           <button
             onClick={handlePrint}
-            className="px-3.5 py-2 rounded-xl border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold shadow-2xs transition-colors flex items-center gap-2"
+            style={{
+              height: 38,
+              padding: "0 14px",
+              borderRadius: 10,
+              backgroundColor: "#ffffff",
+              border: "1px solid #e5e7eb",
+              color: "#374151",
+              fontSize: 12,
+              fontWeight: 600,
+              cursor: "pointer",
+              display: "flex",
+              alignItems: "center",
+              gap: 8,
+            }}
           >
-            <Printer className="w-4 h-4 text-slate-500" />
-            <span>Print GST Summary</span>
+            <Printer size={14} color="#6b7280" />
+            <span>Print Summary</span>
           </button>
         </div>
       </div>
 
       {loading ? (
-        <div className="p-12 bg-white rounded-2xl border border-slate-200 text-center text-slate-500">
-          <div className="flex items-center justify-center gap-2">
-            <div className="w-4 h-4 rounded-full border-2 border-orange-500 border-t-transparent animate-spin"></div>
-            <span>Calculating GST liabilities...</span>
+        <div style={{ backgroundColor: "#ffffff", borderRadius: 16, border: "1px solid #e5e7eb", padding: 60, textAlign: "center" }}>
+          <div style={{ width: 52, height: 52, borderRadius: 14, backgroundColor: "rgba(253,75,35,0.08)", color: "#FD4B23", margin: "0 auto 16px auto", display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <Percent size={24} className="animate-spin" />
           </div>
+          <h3 style={{ fontSize: 16, fontWeight: 700, color: "#111827", margin: 0 }}>Calculating GST Liabilities...</h3>
+          <p style={{ fontSize: 13, color: "#9ca3af", marginTop: 4 }}>Aggregating CGST, SGST, IGST returns</p>
         </div>
       ) : (
-        <div className="space-y-6">
-          {/* Main 4 KPI Cards */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-            {/* CGST */}
-            <div className="bg-white rounded-2xl border border-slate-200/90 shadow-sm p-6 space-y-3 relative overflow-hidden">
-              <div className="w-1.5 h-full bg-blue-500 absolute left-0 top-0"></div>
-              <div className="flex items-center justify-between text-slate-500">
-                <span className="text-xs font-semibold uppercase tracking-wider">Total CGST</span>
-                <span className="text-[11px] font-bold px-2 py-0.5 rounded bg-blue-50 text-blue-600">Central Tax</span>
-              </div>
-              <div className="text-2xl font-bold font-mono text-slate-900">{formatCurrency(totalCgst)}</div>
-              <p className="text-[11px] text-slate-400">Central Goods & Services Tax</p>
+        <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+          {/* Main 4 KPI Stat Cards */}
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 14 }}>
+            <div style={{ backgroundColor: "#ffffff", borderRadius: 16, padding: "20px", border: "1px solid #e5e7eb", borderLeft: "4px solid #2563eb" }}>
+              <div style={{ fontSize: 11, fontWeight: 600, color: "#6b7280", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 6 }}>Total CGST (Central Tax)</div>
+              <div style={{ fontSize: 24, fontWeight: 700, color: "#111827" }}>{formatCurrency(totalCgst)}</div>
+              <div style={{ fontSize: 11, color: "#2563eb", marginTop: 2 }}>Central Goods & Services Tax</div>
             </div>
 
-            {/* SGST */}
-            <div className="bg-white rounded-2xl border border-slate-200/90 shadow-sm p-6 space-y-3 relative overflow-hidden">
-              <div className="w-1.5 h-full bg-emerald-500 absolute left-0 top-0"></div>
-              <div className="flex items-center justify-between text-slate-500">
-                <span className="text-xs font-semibold uppercase tracking-wider">Total SGST</span>
-                <span className="text-[11px] font-bold px-2 py-0.5 rounded bg-emerald-50 text-emerald-600">State Tax</span>
-              </div>
-              <div className="text-2xl font-bold font-mono text-slate-900">{formatCurrency(totalSgst)}</div>
-              <p className="text-[11px] text-slate-400">State Goods & Services Tax</p>
+            <div style={{ backgroundColor: "#ffffff", borderRadius: 16, padding: "20px", border: "1px solid #e5e7eb", borderLeft: "4px solid #16a34a" }}>
+              <div style={{ fontSize: 11, fontWeight: 600, color: "#6b7280", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 6 }}>Total SGST (State Tax)</div>
+              <div style={{ fontSize: 24, fontWeight: 700, color: "#111827" }}>{formatCurrency(totalSgst)}</div>
+              <div style={{ fontSize: 11, color: "#16a34a", marginTop: 2 }}>State Goods & Services Tax</div>
             </div>
 
-            {/* IGST */}
-            <div className="bg-white rounded-2xl border border-slate-200/90 shadow-sm p-6 space-y-3 relative overflow-hidden">
-              <div className="w-1.5 h-full bg-purple-500 absolute left-0 top-0"></div>
-              <div className="flex items-center justify-between text-slate-500">
-                <span className="text-xs font-semibold uppercase tracking-wider">Total IGST</span>
-                <span className="text-[11px] font-bold px-2 py-0.5 rounded bg-purple-50 text-purple-600">Integrated</span>
-              </div>
-              <div className="text-2xl font-bold font-mono text-slate-900">{formatCurrency(totalIgst)}</div>
-              <p className="text-[11px] text-slate-400">Integrated Goods & Services Tax</p>
+            <div style={{ backgroundColor: "#ffffff", borderRadius: 16, padding: "20px", border: "1px solid #e5e7eb", borderLeft: "4px solid #9333ea" }}>
+              <div style={{ fontSize: 11, fontWeight: 600, color: "#6b7280", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 6 }}>Total IGST (Integrated Tax)</div>
+              <div style={{ fontSize: 24, fontWeight: 700, color: "#111827" }}>{formatCurrency(totalIgst)}</div>
+              <div style={{ fontSize: 11, color: "#9333ea", marginTop: 2 }}>Integrated Goods & Services Tax</div>
             </div>
 
-            {/* Total GST */}
-            <div className="bg-white rounded-2xl border border-slate-200/90 shadow-sm p-6 space-y-3 relative overflow-hidden">
-              <div className="w-1.5 h-full bg-orange-500 absolute left-0 top-0"></div>
-              <div className="flex items-center justify-between text-slate-500">
-                <span className="text-xs font-semibold uppercase tracking-wider">Net Total GST</span>
-                <span className="text-[11px] font-bold px-2 py-0.5 rounded bg-orange-50 text-orange-600 font-mono">GSTR-3B</span>
-              </div>
-              <div className="text-2xl font-bold font-mono text-orange-600">{formatCurrency(totalGst)}</div>
-              <p className="text-[11px] text-slate-400">Combined total tax liability</p>
+            <div style={{ backgroundColor: "#ffffff", borderRadius: 16, padding: "20px", border: "1px solid #e5e7eb", background: "linear-gradient(135deg, #111113 0%, #1f1f23 100%)", color: "#ffffff" }}>
+              <div style={{ fontSize: 11, fontWeight: 600, color: "#9ca3af", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 6 }}>Combined Net GST Liability</div>
+              <div style={{ fontSize: 24, fontWeight: 800, color: "#FD4B23" }}>{formatCurrency(totalGst)}</div>
+              <div style={{ fontSize: 11, color: "#9ca3af", marginTop: 2 }}>Total tax collected minus ITC</div>
             </div>
           </div>
 
-          {/* Tax Compliance Info Card */}
-          <div className="p-6 bg-slate-900 text-white rounded-2xl shadow-xl flex flex-col md:flex-row items-center justify-between gap-6">
-            <div className="space-y-1.5 text-center md:text-left">
-              <span className="text-xs font-bold uppercase tracking-widest text-orange-400">GST Compliance Status</span>
-              <h3 className="text-base font-bold">Automated GSTR-1 & GSTR-3B Tax Ledger</h3>
-              <p className="text-xs text-slate-400">All calculations reflect CGST/SGST/IGST tax collected on sales invoices minus tax paid on procurement.</p>
+          {/* Compliance Card */}
+          <div style={{ backgroundColor: "#111113", borderRadius: 20, border: "1px solid rgba(253,75,35,0.2)", padding: "24px 28px", color: "#ffffff", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 20, flexWrap: "wrap" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+              <div style={{ width: 48, height: 48, borderRadius: 14, backgroundColor: "rgba(253,75,35,0.15)", color: "#FD4B23", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <ShieldCheck size={26} />
+              </div>
+              <div>
+                <div style={{ fontSize: 11, fontWeight: 700, color: "#FD4B23", textTransform: "uppercase", letterSpacing: "0.08em" }}>GST Tax Compliance Ready</div>
+                <h3 style={{ fontSize: 16, fontWeight: 700, color: "#ffffff", margin: "2px 0 0 0" }}>Automated GSTR-1 & GSTR-3B Calculations</h3>
+                <p style={{ fontSize: 12, color: "#9ca3af", margin: "4px 0 0 0" }}>
+                  All figures dynamically aggregate tax collected on customer sales minus tax credit paid on vendor purchases.
+                </p>
+              </div>
             </div>
 
-            <div className="p-4 rounded-xl bg-slate-800 border border-slate-700 text-center min-w-[200px]">
-              <span className="text-[11px] font-medium text-slate-400 uppercase tracking-wider block">Net Payable Tax</span>
-              <span className="text-xl font-bold font-mono text-orange-400">{formatCurrency(totalGst)}</span>
+            <div style={{ backgroundColor: "#1a1a1e", padding: "14px 22px", borderRadius: 14, border: "1px solid rgba(255,255,255,0.1)", textAlign: "center", minWidth: 200 }}>
+              <span style={{ fontSize: 11, fontWeight: 600, color: "#9ca3af", textTransform: "uppercase", letterSpacing: "0.05em", display: "block" }}>Net Tax Payable</span>
+              <span style={{ fontSize: 20, fontWeight: 800, color: "#FD4B23", fontFamily: "monospace" }}>{formatCurrency(totalGst)}</span>
             </div>
           </div>
         </div>

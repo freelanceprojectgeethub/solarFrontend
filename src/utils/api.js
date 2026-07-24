@@ -1,7 +1,7 @@
 import axios from "axios";
 
 const api = axios.create({
-  baseURL: "http://localhost:5000/v1",
+  baseURL: import.meta.env.VITE_API_URL || "https://solarbackend-j6af.onrender.com/v1",
 });
 
 api.interceptors.request.use((config) => {

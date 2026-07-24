@@ -1,13 +1,15 @@
-import { useState, useEffect } from "react";
-import { 
-  UserCheck, 
-  Search, 
-  Printer, 
-  Filter,
-  CheckCircle2,
-  FileSpreadsheet
-} from "lucide-react";
+import { useState, useEffect, useMemo } from "react";
 import api from "../../utils/api";
+import {
+  Users,
+  Search,
+  Printer,
+  Download,
+  Filter,
+  RefreshCw,
+  X,
+  FileText,
+} from "lucide-react";
 
 const CustomerLedger = () => {
   const [customers, setCustomers] = useState([]);
@@ -15,6 +17,7 @@ const CustomerLedger = () => {
   const [data, setData] = useState([]);
   const [closingBalance, setClosingBalance] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
 
   useEffect(() => {
     const fetchCustomers = async () => {
@@ -28,12 +31,10 @@ const CustomerLedger = () => {
     fetchCustomers();
   }, []);
 
-  const fetchLedger = async () => {
-    if (!selectedCustomer) {
-      alert("Please select a customer first.");
-      return;
-    }
-    setLoading(true);
+  const fetchLedger = async (silent = false) => {
+    if (!selectedCustomer) return;
+    if (!silent) setLoading(true);
+    else setRefreshing(true);
     try {
       const res = await api.get("/reports/customer-ledger", {
         params: { customerId: selectedCustomer },
@@ -44,6 +45,7 @@ const CustomerLedger = () => {
       console.error("Failed to fetch Customer Ledger:", err);
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
   };
 
@@ -57,7 +59,7 @@ const CustomerLedger = () => {
     return new Date(dateStr).toLocaleDateString("en-IN", {
       day: "2-digit",
       month: "short",
-      year: "numeric"
+      year: "numeric",
     });
   };
 
@@ -71,147 +73,278 @@ const CustomerLedger = () => {
 
   const selectedCustomerObj = customers.find((c) => c._id === selectedCustomer);
 
+  const totalDebit = useMemo(() => data.reduce((acc, i) => acc + (i.debit || 0), 0), [data]);
+  const totalCredit = useMemo(() => data.reduce((acc, i) => acc + (i.credit || 0), 0), [data]);
+
   const handlePrint = () => {
     window.print();
   };
 
+  const exportToCSV = () => {
+    if (data.length === 0) return;
+    const headers = ["Date", "Invoice / Particulars", "Type", "Debit (₹)", "Credit (₹)", "Balance (₹)"];
+    const rows = data.map((d) => [
+      `"${formatDate(d.date)}"`,
+      `"${d.particulars || d.voucherNo || ""}"`,
+      `"${d.type || ""}"`,
+      d.debit || 0,
+      d.credit || 0,
+      d.balance || 0,
+    ]);
+    const csvContent = "data:text/csv;charset=utf-8," + [headers.join(","), ...rows.map((r) => r.join(","))].join("\n");
+    const link = document.createElement("a");
+    link.setAttribute("href", encodeURI(csvContent));
+    link.setAttribute("download", `Customer_Ledger_${selectedCustomerObj?.name || "Report"}_${new Date().toISOString().slice(0, 10)}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   return (
-    <div className="space-y-6 animate-fade-in pb-12">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+    <div style={{ display: "flex", flexDirection: "column", gap: 20 }} className="pb-10 relative">
+      {/* Page Title & Top Actions Bar */}
+      <div style={{ display: "flex", flexDirection: "column", gap: 16 }} className="md:!flex-row md:!items-center md:!justify-between">
         <div>
-          <h1 className="text-xl font-bold text-slate-900 tracking-tight flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-emerald-500/10 text-emerald-600 flex items-center justify-center">
-              <UserCheck className="w-4 h-4" />
-            </div>
-            Customer Statement & Running Ledger
+          <h1 style={{ fontSize: 24, fontWeight: 700, color: "#111827", letterSpacing: "-0.02em", margin: 0 }}>
+            Customer Ledger Statement
           </h1>
+          <p style={{ fontSize: 13, color: "#6b7280", marginTop: 4, margin: 0 }}>
+            Itemized client account statement, sales invoices, receipt credits, and outstanding balance.
+          </p>
         </div>
 
-        <div className="flex items-center gap-2.5">
-          <button
-            onClick={handlePrint}
-            className="px-3.5 py-2 rounded-xl border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold shadow-2xs transition-colors flex items-center gap-2"
-          >
-            <Printer className="w-4 h-4 text-slate-500" />
-            <span>Print Statement</span>
-          </button>
+        <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+          {selectedCustomer && (
+            <>
+              <button
+                onClick={() => fetchLedger(true)}
+                disabled={refreshing}
+                style={{
+                  height: 38,
+                  padding: "0 14px",
+                  borderRadius: 10,
+                  backgroundColor: "#ffffff",
+                  border: "1px solid #e5e7eb",
+                  color: "#374151",
+                  fontSize: 12,
+                  fontWeight: 600,
+                  cursor: refreshing ? "not-allowed" : "pointer",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 8,
+                }}
+              >
+                <RefreshCw size={14} className={refreshing ? "animate-spin text-[#FD4B23]" : ""} />
+                <span>Refresh</span>
+              </button>
+
+              <button
+                onClick={exportToCSV}
+                style={{
+                  height: 38,
+                  padding: "0 14px",
+                  borderRadius: 10,
+                  backgroundColor: "#ffffff",
+                  border: "1px solid #e5e7eb",
+                  color: "#374151",
+                  fontSize: 12,
+                  fontWeight: 600,
+                  cursor: "pointer",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 8,
+                }}
+              >
+                <Download size={14} color="#FD4B23" />
+                <span>Export CSV</span>
+              </button>
+
+              <button
+                onClick={handlePrint}
+                style={{
+                  height: 38,
+                  padding: "0 14px",
+                  borderRadius: 10,
+                  backgroundColor: "#ffffff",
+                  border: "1px solid #e5e7eb",
+                  color: "#374151",
+                  fontSize: 12,
+                  fontWeight: 600,
+                  cursor: "pointer",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 8,
+                }}
+              >
+                <Printer size={14} color="#6b7280" />
+                <span>Print Statement</span>
+              </button>
+            </>
+          )}
         </div>
       </div>
 
-      {/* Customer Selector Card */}
-      <div className="bg-white rounded-2xl border border-slate-200/90 shadow-xs p-6 space-y-4">
-        <form onSubmit={handleShowLedger} className="flex flex-col sm:flex-row items-end gap-4">
-          <div className="flex-1">
-            <label className="form-label">
-              <span>Choose Client / Customer</span>
-              <span className="form-label-req">*</span>
+      {/* Customer Selector Control Bar */}
+      <div style={{ backgroundColor: "#ffffff", borderRadius: 16, padding: "16px 20px", border: "1px solid #e5e7eb" }}>
+        <form onSubmit={handleShowLedger} style={{ display: "flex", alignItems: "center", gap: 14, flexWrap: "wrap" }}>
+          <div style={{ flex: 1, minWidth: 260 }}>
+            <label style={{ fontSize: 11, fontWeight: 600, color: "#374151", textTransform: "uppercase", letterSpacing: "0.05em", display: "block", marginBottom: 6 }}>
+              Select Customer Client Account <span style={{ color: "#ef4444" }}>*</span>
             </label>
             <select
               value={selectedCustomer}
               onChange={(e) => setSelectedCustomer(e.target.value)}
-              className="input-field font-medium cursor-pointer"
+              style={{
+                width: "100%",
+                height: 42,
+                padding: "0 14px",
+                fontSize: 13,
+                fontFamily: "'Inter', system-ui, sans-serif",
+                backgroundColor: "#f9fafb",
+                border: "1px solid #e5e7eb",
+                borderRadius: 10,
+                outline: "none",
+                color: "#111827",
+                fontWeight: 600,
+                cursor: "pointer",
+              }}
             >
-              <option value="">Choose Customer...</option>
-              {customers.map((c) => (
-                <option key={c._id} value={c._id}>
-                  {c.name} {c.phone ? `(${c.phone})` : ""}
+              <option value="">Choose Customer Client...</option>
+              {customers.map((cust) => (
+                <option key={cust._id} value={cust._id}>
+                  {cust.name} {cust.gstNumber ? `(GST: ${cust.gstNumber})` : ""}
                 </option>
               ))}
             </select>
           </div>
 
-          <button
-            type="submit"
-            className="btn-accent bg-emerald-600 hover:bg-emerald-700 px-6 py-3 text-xs font-bold shadow-md shadow-emerald-600/20 flex items-center gap-2"
-          >
-            <Filter className="w-4 h-4" />
-            <span>Generate Account Ledger</span>
-          </button>
-        </form>
-
-        {selectedCustomerObj && (
-          <div className="p-4 rounded-xl bg-slate-50 border border-slate-200/80 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs">
-            <div>
-              <span className="font-bold text-slate-900 text-sm block">{selectedCustomerObj.name}</span>
-              <span className="text-slate-500">Phone: {selectedCustomerObj.phone || "N/A"} • GSTIN: {selectedCustomerObj.gstNumber || "Consumer (B2C)"}</span>
-            </div>
-            {closingBalance !== null && (
-              <div className="text-right">
-                <span className="text-[11px] uppercase tracking-wider font-semibold text-slate-400 block">Closing Receivables Balance</span>
-                <span className={`text-base font-bold font-mono ${closingBalance >= 0 ? "text-emerald-600" : "text-red-600"}`}>
-                  {formatCurrency(closingBalance)}
-                </span>
-              </div>
-            )}
+          <div style={{ alignSelf: "flex-end" }}>
+            <button
+              type="submit"
+              disabled={!selectedCustomer}
+              style={{
+                height: 42,
+                padding: "0 22px",
+                borderRadius: 10,
+                border: "none",
+                background: selectedCustomer ? "linear-gradient(135deg, #FD4B23 0%, #e5401e 100%)" : "#e5e7eb",
+                color: selectedCustomer ? "#ffffff" : "#9ca3af",
+                fontSize: 13,
+                fontWeight: 600,
+                cursor: selectedCustomer ? "pointer" : "not-allowed",
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 8,
+              }}
+            >
+              <Filter size={15} />
+              <span>Generate Statement</span>
+            </button>
           </div>
-        )}
+        </form>
       </div>
 
-      {/* Table Workspace */}
-      <div className="bg-white rounded-2xl border border-slate-200/90 shadow-sm overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse text-xs">
-            <thead>
-              <tr className="bg-slate-50/80 border-b border-slate-200 text-slate-700 font-bold uppercase tracking-wider text-[11px]">
-                <th className="py-4 px-5">Date</th>
-                <th className="py-4 px-4">Transaction Type</th>
-                <th className="py-4 px-5">Voucher Reference</th>
-                <th className="py-4 px-4 text-right">Credit (₹)</th>
-                <th className="py-4 px-4 text-right">Debit (₹)</th>
-                <th className="py-4 px-5 text-right">Running Balance (₹)</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100 bg-white">
-              {loading ? (
-                <tr>
-                  <td colSpan="6" className="py-12 text-center text-slate-500">
-                    <div className="flex items-center justify-center gap-2">
-                      <div className="w-4 h-4 rounded-full border-2 border-emerald-600 border-t-transparent animate-spin"></div>
-                      <span>Fetching Customer Ledger statement...</span>
-                    </div>
-                  </td>
+      {/* KPI Stats Panel (When Selected) */}
+      {selectedCustomer && closingBalance !== null && (
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 14 }}>
+          <div style={{ backgroundColor: "#ffffff", borderRadius: 16, padding: "16px 20px", border: "1px solid #e5e7eb" }}>
+            <div style={{ fontSize: 11, fontWeight: 600, color: "#6b7280", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 6 }}>Total Invoiced (Debit)</div>
+            <div style={{ fontSize: 22, fontWeight: 700, color: "#dc2626" }}>{formatCurrency(totalDebit)}</div>
+            <div style={{ fontSize: 11, color: "#dc2626", marginTop: 2 }}>Sales billing amount</div>
+          </div>
+
+          <div style={{ backgroundColor: "#ffffff", borderRadius: 16, padding: "16px 20px", border: "1px solid #e5e7eb" }}>
+            <div style={{ fontSize: 11, fontWeight: 600, color: "#6b7280", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 6 }}>Total Collections (Credit)</div>
+            <div style={{ fontSize: 22, fontWeight: 700, color: "#16a34a" }}>{formatCurrency(totalCredit)}</div>
+            <div style={{ fontSize: 11, color: "#16a34a", marginTop: 2 }}>Collected receipt total</div>
+          </div>
+
+          <div style={{ backgroundColor: "#ffffff", borderRadius: 16, padding: "16px 20px", border: "1px solid #e5e7eb", background: "linear-gradient(135deg, #111113 0%, #1f1f23 100%)", color: "#ffffff" }}>
+            <div style={{ fontSize: 11, fontWeight: 600, color: "#9ca3af", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 6 }}>Net Closing Balance</div>
+            <div style={{ fontSize: 22, fontWeight: 800, color: closingBalance > 0 ? "#FD4B23" : "#22c55e" }}>{formatCurrency(Math.abs(closingBalance))} {closingBalance > 0 ? "Receivable" : "Advance"}</div>
+            <div style={{ fontSize: 11, color: "#9ca3af", marginTop: 2 }}>Current account position</div>
+          </div>
+        </div>
+      )}
+
+      {/* Main Content Area */}
+      {!selectedCustomer ? (
+        <div style={{ backgroundColor: "#ffffff", borderRadius: 16, border: "1px solid #e5e7eb", padding: 60, textAlign: "center" }}>
+          <div style={{ width: 56, height: 56, borderRadius: 16, backgroundColor: "#f3f4f6", color: "#9ca3af", margin: "0 auto 16px auto", display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <Users size={28} />
+          </div>
+          <h3 style={{ fontSize: 16, fontWeight: 700, color: "#111827", margin: 0 }}>Select a Customer Account</h3>
+          <p style={{ fontSize: 13, color: "#6b7280", maxWidth: 360, margin: "6px auto 0 auto", lineHeight: 1.5 }}>
+            Choose a customer from the dropdown above to load their itemized ledger statement.
+          </p>
+        </div>
+      ) : loading ? (
+        <div style={{ backgroundColor: "#ffffff", borderRadius: 16, border: "1px solid #e5e7eb", padding: 60, textAlign: "center" }}>
+          <div style={{ width: 52, height: 52, borderRadius: 14, backgroundColor: "rgba(253,75,35,0.08)", color: "#FD4B23", margin: "0 auto 16px auto", display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <Users size={24} className="animate-spin" />
+          </div>
+          <h3 style={{ fontSize: 16, fontWeight: 700, color: "#111827", margin: 0 }}>Loading Ledger Statement...</h3>
+          <p style={{ fontSize: 13, color: "#9ca3af", marginTop: 4 }}>Calculating running balances</p>
+        </div>
+      ) : data.length === 0 ? (
+        <div style={{ backgroundColor: "#ffffff", borderRadius: 16, border: "1px solid #e5e7eb", padding: 60, textAlign: "center" }}>
+          <div style={{ width: 56, height: 56, borderRadius: 16, backgroundColor: "#f3f4f6", color: "#9ca3af", margin: "0 auto 16px auto", display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <FileText size={28} />
+          </div>
+          <h3 style={{ fontSize: 16, fontWeight: 700, color: "#111827", margin: 0 }}>No Ledger Entries</h3>
+          <p style={{ fontSize: 13, color: "#6b7280", maxWidth: 360, margin: "6px auto 0 auto", lineHeight: 1.5 }}>
+            No sales or receipt transactions recorded for <span style={{ fontWeight: 700, color: "#111827" }}>{selectedCustomerObj?.name}</span> yet.
+          </p>
+        </div>
+      ) : (
+        <div style={{ backgroundColor: "#ffffff", borderRadius: 16, border: "1px solid #e5e7eb", overflow: "hidden", boxShadow: "0 1px 3px rgba(0,0,0,0.02)" }}>
+          <div style={{ overflowX: "auto" }}>
+            <table style={{ width: "100%", borderCollapse: "collapse", textAlign: "left" }}>
+              <thead>
+                <tr style={{ backgroundColor: "#f9fafb", borderBottom: "1px solid #e5e7eb", fontSize: 11, fontWeight: 700, color: "#6b7280", textTransform: "uppercase", letterSpacing: "0.05em" }}>
+                  <th style={{ padding: "14px 20px" }}>Date</th>
+                  <th style={{ padding: "14px 20px" }}>Particulars / Invoice No</th>
+                  <th style={{ padding: "14px 20px" }}>Type</th>
+                  <th style={{ padding: "14px 20px", textAlign: "right" }}>Debit (₹)</th>
+                  <th style={{ padding: "14px 20px", textAlign: "right" }}>Credit (₹)</th>
+                  <th style={{ padding: "14px 20px", textAlign: "right" }}>Running Balance (₹)</th>
                 </tr>
-              ) : data.length === 0 ? (
-                <tr>
-                  <td colSpan="6" className="py-12 text-center text-slate-500">
-                    <div className="max-w-xs mx-auto text-center space-y-2">
-                      <UserCheck className="w-8 h-8 text-slate-300 mx-auto" />
-                      <p className="font-semibold text-slate-700">No ledger entries found</p>
-                      <p className="text-xs text-slate-400">Select a customer above and click "Generate Account Ledger".</p>
-                    </div>
-                  </td>
-                </tr>
-              ) : (
-                data.map((item, index) => (
-                  <tr key={index} className="hover:bg-slate-50/60 transition-colors">
-                    <td className="py-3.5 px-5 font-mono text-slate-600">{formatDate(item.date)}</td>
-                    <td className="py-3.5 px-4">
-                      <span className={`inline-flex items-center gap-1 px-2.5 py-1 text-[11px] font-semibold rounded-lg capitalize ${
-                        item.type === "sale"
-                          ? "bg-blue-50 text-blue-700 border border-blue-200"
-                          : "bg-emerald-50 text-emerald-700 border border-emerald-200"
-                      }`}>
-                        {item.type}
+              </thead>
+              <tbody style={{ fontSize: 13, color: "#374151" }}>
+                {data.map((item, idx) => (
+                  <tr
+                    key={idx}
+                    style={{ borderBottom: "1px solid #f3f4f6", transition: "background-color 0.15s" }}
+                    onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "#f9fafb"}
+                    onMouseLeave={(e) => e.currentTarget.style.backgroundColor = "transparent"}
+                  >
+                    <td style={{ padding: "14px 20px", color: "#6b7280" }}>
+                      {formatDate(item.date)}
+                    </td>
+                    <td style={{ padding: "14px 20px", fontWeight: 600, color: "#111827" }}>
+                      {item.particulars || item.voucherNo || "—"}
+                    </td>
+                    <td style={{ padding: "14px 20px" }}>
+                      <span style={{ fontSize: 11, fontWeight: 600, padding: "3px 10px", borderRadius: 20, backgroundColor: item.debit > 0 ? "#fef2f2" : "#f0fdf4", color: item.debit > 0 ? "#dc2626" : "#16a34a", textTransform: "uppercase" }}>
+                        {item.type || (item.debit > 0 ? "Sales" : "Receipt")}
                       </span>
                     </td>
-                    <td className="py-3.5 px-5 font-mono font-bold text-slate-900">{item.reference || "N/A"}</td>
-                    <td className="py-3.5 px-4 text-right font-mono font-semibold text-emerald-600">
-                      {item.credit > 0 ? formatCurrency(item.credit) : "-"}
+                    <td style={{ padding: "14px 20px", textAlign: "right", fontFamily: "monospace", color: item.debit > 0 ? "#dc2626" : "#9ca3af", fontWeight: item.debit > 0 ? 700 : 400 }}>
+                      {item.debit > 0 ? formatCurrency(item.debit) : "—"}
                     </td>
-                    <td className="py-3.5 px-4 text-right font-mono font-semibold text-red-600">
-                      {item.debit > 0 ? formatCurrency(item.debit) : "-"}
+                    <td style={{ padding: "14px 20px", textAlign: "right", fontFamily: "monospace", color: item.credit > 0 ? "#16a34a" : "#9ca3af", fontWeight: item.credit > 0 ? 700 : 400 }}>
+                      {item.credit > 0 ? formatCurrency(item.credit) : "—"}
                     </td>
-                    <td className="py-3.5 px-5 text-right font-mono font-bold text-slate-900">
+                    <td style={{ padding: "14px 20px", textAlign: "right", fontFamily: "monospace", fontWeight: 700, color: "#111827" }}>
                       {formatCurrency(item.balance)}
                     </td>
                   </tr>
-                ))
-              )}
-            </tbody>
-          </table>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 };
