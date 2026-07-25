@@ -973,3 +973,190 @@ h1, h2, h3, h4, h5, h6, .font-heading {
 .table-row:hover {
   background-color: #FAFBFC;
 }
+
+/* ═══════════════════════════════════════════
+   Auth Pages — Mobile Responsive Overrides
+   Desktop inline styles are untouched.
+   These media queries ONLY activate below 1024px.
+   ═══════════════════════════════════════════ */
+
+/* ── Tablet & below: stack grid to single column ── */
+@media (max-width: 1023px) {
+  .auth-grid {
+    grid-template-columns: 1fr !important;
+  }
+  .auth-left-panel {
+    display: none !important;
+  }
+  .auth-mobile-brand {
+    display: flex !important;
+  }
+  .auth-mobile-footer {
+    display: block !important;
+  }
+}
+
+/* ── Tablet (641px – 1023px) ── */
+@media (min-width: 641px) and (max-width: 1023px) {
+  .auth-wrapper {
+    padding: 32px 24px !important;
+  }
+  .auth-card {
+    border-radius: 20px !important;
+  }
+  .auth-right-panel {
+    padding: 48px 44px !important;
+  }
+}
+
+/* ── Phone (≤640px) ── */
+@media (max-width: 640px) {
+  .auth-page {
+    align-items: flex-start !important;
+  }
+  .auth-wrapper {
+    padding: 20px 12px !important;
+  }
+  .auth-card {
+    border-radius: 16px !important;
+  }
+  .auth-right-panel {
+    padding: 28px 20px !important;
+  }
+  /* Prevent iOS Safari input zoom — override font-size to 16px */
+  .auth-input {
+    font-size: 16px !important;
+  }
+}
+
+/* ── Small phones (≤380px) ── */
+@media (max-width: 380px) {
+  .auth-wrapper {
+    padding: 16px 8px !important;
+  }
+  .auth-card {
+    border-radius: 14px !important;
+  }
+  .auth-right-panel {
+    padding: 24px 16px !important;
+  }
+}
+
+/* ═══════════════════════════════════════════
+   App Layout & Dashboard — Mobile Overrides
+   ═══════════════════════════════════════════ */
+
+/* ── Mobile Layout Drawer (< 1024px) ── */
+@media (max-width: 1023px) {
+  .app-layout-container {
+    padding: 0 !important;
+    gap: 0 !important;
+  }
+
+  .app-main-area {
+    border-radius: 0 !important;
+    border: none !important;
+  }
+
+  .app-header {
+    border-radius: 0 !important;
+    padding: 0 16px !important;
+  }
+
+  .app-main-content {
+    padding: 16px 14px !important;
+  }
+
+  .app-sidebar {
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    bottom: 0 !important;
+    height: 100vh !important;
+    width: 280px !important;
+    min-width: 280px !important;
+    border-radius: 0 20px 20px 0 !important;
+    transform: translateX(-100%) !important;
+    box-shadow: 20px 0 50px rgba(0,0,0,0.6) !important;
+    z-index: 50 !important;
+  }
+
+  .app-sidebar.mobile-open {
+    transform: translateX(0) !important;
+  }
+}
+
+/* ── Small Mobile Screens (<= 640px) Dashboard ── */
+@media (max-width: 640px) {
+  .dashboard-hero {
+    padding: 1.25rem 1rem !important;
+    border-radius: 16px !important;
+  }
+
+  .dashboard-hero-content h1 {
+    font-size: 1.35rem !important;
+  }
+
+  .dashboard-section {
+    border-radius: 14px !important;
+  }
+
+  .dashboard-section-head {
+    padding: 1rem 1.125rem !important;
+  }
+
+  .dashboard-section-body {
+    padding: 1.125rem 1rem !important;
+  }
+
+  .dashboard-kpi-grid {
+    grid-template-columns: 1fr !important;
+    gap: 0.875rem !important;
+  }
+
+  .dashboard-kpi {
+    padding: 1.125rem 1.25rem !important;
+    border-radius: 14px !important;
+  }
+
+  .dashboard-kpi-value {
+    font-size: 1.35rem !important;
+  }
+
+  .dashboard-actions-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 0.75rem !important;
+  }
+
+  .dashboard-action-tile {
+    padding: 1rem 0.875rem !important;
+    border-radius: 12px !important;
+  }
+
+  .dashboard-action-tile-icon {
+    width: 2.25rem !important;
+    height: 2.25rem !important;
+    border-radius: 10px !important;
+  }
+
+  .dashboard-action-tile-title {
+    font-size: 0.8125rem !important;
+  }
+
+  .dashboard-action-tile-desc {
+    display: none !important;
+  }
+
+  .dashboard-analytics-grid {
+    gap: 1rem !important;
+  }
+
+  .dashboard-insight {
+    padding: 1rem 1.125rem !important;
+    border-radius: 12px !important;
+  }
+
+  .dashboard-insight-value {
+    font-size: 1.25rem !important;
+  }
+}

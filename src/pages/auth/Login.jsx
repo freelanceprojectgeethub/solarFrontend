@@ -127,6 +127,7 @@ const Login = () => {
   /* ── login page ── */
   return (
     <div
+      className="auth-page"
       style={{
         minHeight: "100vh",
         display: "flex",
@@ -158,6 +159,7 @@ const Login = () => {
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 0.5 }}
+        className="auth-wrapper"
         style={{ position: "relative", zIndex: 10, width: "100%", maxWidth: 1060, margin: "0 auto", padding: "24px 16px" }}
       >
         {/* ── brand ── */}
@@ -196,6 +198,7 @@ const Login = () => {
           initial={{ opacity: 0, y: 16, scale: 0.99 }}
           animate={{ opacity: 1, y: 0, scale: 1 }}
           transition={{ duration: 0.55, delay: 0.1, ease: [0.22, 1, 0.36, 1] }}
+          className="auth-card"
           style={{
             position: "relative",
             borderRadius: 20,
@@ -210,10 +213,10 @@ const Login = () => {
           {/* Top gradient line */}
           <div style={{ position: "absolute", top: 0, left: "15%", right: "15%", height: 1, background: "linear-gradient(90deg, transparent, rgba(255,255,255,0.08), transparent)" }} />
 
-          <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: 0 }} className="lg:!grid-cols-2">
+          <div className="auth-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 0 }}>
 
             {/* ═══ LEFT — Brand & Features ═══ */}
-            <div style={{ padding: "56px 48px", display: "flex", flexDirection: "column", justifyContent: "space-between" }} className="hidden lg:!flex lg:!border-r lg:!border-r-[rgba(255,255,255,0.04)]">
+            <div className="auth-left-panel" style={{ padding: "56px 48px", display: "flex", flexDirection: "column", justifyContent: "space-between", borderRight: "1px solid rgba(255,255,255,0.04)" }}>
               <motion.div initial="hidden" animate="show" variants={{ show: { transition: { staggerChildren: 0.06, delayChildren: 0.2 } } }}>
                 {/* Headline */}
                 <motion.h1
@@ -285,15 +288,15 @@ const Login = () => {
             </div>
 
             {/* ═══ RIGHT — Login Form ═══ */}
-            <div style={{ padding: "56px 48px", display: "flex", flexDirection: "column", justifyContent: "center" }}>
+            <div className="auth-right-panel" style={{ padding: "56px 48px", display: "flex", flexDirection: "column", justifyContent: "center" }}>
               <motion.div initial="hidden" animate="show" variants={{ show: { transition: { staggerChildren: 0.06, delayChildren: 0.15 } } }}>
 
-                {/* Mobile brand */}
+                {/* Mobile brand — hidden on desktop, visible on mobile */}
                 <motion.div
                   variants={fadeUp}
                   custom={0}
-                  style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 32 }}
-                  className="lg:!hidden"
+                  className="auth-mobile-brand"
+                  style={{ display: "none", alignItems: "center", gap: 10, marginBottom: 32 }}
                 >
                   <div
                     style={{
@@ -363,6 +366,7 @@ const Login = () => {
                         onChange={(e) => setEmail(e.target.value)}
                         required
                         placeholder="you@company.com"
+                        className="auth-input"
                         style={inputStyle(false)}
                         onFocus={onFocus}
                         onBlur={onBlur}
@@ -382,6 +386,7 @@ const Login = () => {
                           onChange={(e) => setPassword(e.target.value)}
                           required
                           placeholder="Enter your password"
+                          className="auth-input"
                           style={inputStyle(true)}
                           onFocus={onFocus}
                           onBlur={onBlur}
@@ -391,18 +396,21 @@ const Login = () => {
                           tabIndex={-1}
                           onClick={() => setShowPwd((s) => !s)}
                           aria-label={showPwd ? "Hide password" : "Show password"}
+                          className="auth-pwd-toggle"
                           style={{
                             position: "absolute",
-                            right: 14,
-                            top: "50%",
-                            transform: "translateY(-50%)",
+                            right: 0,
+                            top: 0,
+                            bottom: 0,
+                            width: 44,
                             background: "none",
                             border: "none",
-                            padding: 2,
+                            padding: 0,
                             cursor: "pointer",
                             color: "#52525b",
                             display: "flex",
                             alignItems: "center",
+                            justifyContent: "center",
                           }}
                         >
                           {showPwd ? <EyeOff size={16} strokeWidth={1.6} /> : <Eye size={16} strokeWidth={1.6} />}
@@ -459,8 +467,8 @@ const Login = () => {
                   </motion.div>
                 </form>
 
-                {/* Mobile footer */}
-                <p style={{ fontSize: 11, color: "#27272a", marginTop: 28, textAlign: "center" }} className="lg:!hidden">
+                {/* Mobile footer — hidden on desktop */}
+                <p className="auth-mobile-footer" style={{ fontSize: 11, color: "#27272a", marginTop: 28, textAlign: "center", display: "none" }}>
                   © {new Date().getFullYear()} Solar SaaS. All rights reserved.
                 </p>
               </motion.div>

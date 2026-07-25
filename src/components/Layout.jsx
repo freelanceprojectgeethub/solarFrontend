@@ -44,6 +44,8 @@ import {
   User as UserIcon,
   ChevronDown,
   Settings,
+  Menu,
+  X,
 } from "lucide-react";
 
 const Layout = ({ children }) => {
@@ -51,8 +53,14 @@ const Layout = ({ children }) => {
   const navigate = useNavigate();
   const location = useLocation();
   const [collapsed, setCollapsed] = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
   const [profileDropdown, setProfileDropdown] = useState(false);
   const dropdownRef = useRef(null);
+
+  // Close mobile sidebar on route change
+  useEffect(() => {
+    setMobileOpen(false);
+  }, [location.pathname]);
 
   // Close dropdown on outside click
   useEffect(() => {
@@ -153,6 +161,7 @@ const Layout = ({ children }) => {
 
   return (
     <div
+      className="app-layout-container"
       style={{
         display: "flex",
         height: "100vh",
@@ -163,8 +172,30 @@ const Layout = ({ children }) => {
         fontFamily: "'Inter', system-ui, -apple-system, sans-serif",
       }}
     >
+      {/* ── MOBILE BACKDROP OVERLAY ── */}
+      <AnimatePresence>
+        {mobileOpen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setMobileOpen(false)}
+            className="mobile-backdrop"
+            style={{
+              position: "fixed",
+              inset: 0,
+              backgroundColor: "rgba(0, 0, 0, 0.65)",
+              backdropFilter: "blur(4px)",
+              WebkitBackdropFilter: "blur(4px)",
+              zIndex: 40,
+            }}
+          />
+        )}
+      </AnimatePresence>
+
       {/* ── SIDEBAR ── */}
       <aside
+        className={`app-sidebar ${mobileOpen ? "mobile-open" : ""}`}
         style={{
           width: collapsed ? 72 : 252,
           minWidth: collapsed ? 72 : 252,
@@ -177,9 +208,9 @@ const Layout = ({ children }) => {
           WebkitBackdropFilter: "blur(40px)",
           border: "1px solid rgba(255,255,255,0.05)",
           boxShadow: "0 0 0 0.5px rgba(255,255,255,0.03) inset, 0 20px 40px -10px rgba(0,0,0,0.5)",
-          transition: "width 0.3s cubic-bezier(0.22, 1, 0.36, 1), min-width 0.3s cubic-bezier(0.22, 1, 0.36, 1)",
+          transition: "width 0.3s cubic-bezier(0.22, 1, 0.36, 1), min-width 0.3s cubic-bezier(0.22, 1, 0.36, 1), transform 0.3s cubic-bezier(0.22, 1, 0.36, 1)",
           position: "relative",
-          zIndex: 30,
+          zIndex: 50,
           overflow: "hidden",
         }}
       >
@@ -195,7 +226,7 @@ const Layout = ({ children }) => {
             flexShrink: 0,
           }}
         >
-          <div style={{ display: "flex", itemsCenter: "center", gap: 10, overflow: "hidden" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 10, overflow: "hidden" }}>
             <div style={{ position: "relative", flexShrink: 0 }}>
               <div style={{ position: "absolute", inset: -8, background: "radial-gradient(circle, rgba(253,75,35,0.18) 0%, transparent 70%)", borderRadius: 16 }} />
               <div
@@ -226,10 +257,11 @@ const Layout = ({ children }) => {
             )}
           </div>
 
-          {/* Collapse Button */}
+          {/* Desktop Collapse Button */}
           {!collapsed && (
             <button
               onClick={() => setCollapsed(true)}
+              className="hidden lg:flex"
               style={{
                 width: 28,
                 height: 28,
@@ -237,7 +269,6 @@ const Layout = ({ children }) => {
                 border: "1px solid rgba(255,255,255,0.06)",
                 backgroundColor: "rgba(255,255,255,0.025)",
                 color: "#71717a",
-                display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
                 cursor: "pointer",
@@ -256,6 +287,25 @@ const Layout = ({ children }) => {
               <ChevronLeft size={15} strokeWidth={1.8} />
             </button>
           )}
+
+          {/* Mobile Close Button */}
+          <button
+            onClick={() => setMobileOpen(false)}
+            className="flex lg:hidden"
+            style={{
+              width: 28,
+              height: 28,
+              borderRadius: 8,
+              border: "1px solid rgba(255,255,255,0.06)",
+              backgroundColor: "rgba(255,255,255,0.05)",
+              color: "#fafafa",
+              alignItems: "center",
+              justifyContent: "center",
+              cursor: "pointer",
+            }}
+          >
+            <X size={16} />
+          </button>
         </div>
 
         {/* Scrollable Nav Items */}
@@ -293,6 +343,7 @@ const Layout = ({ children }) => {
                         key={item.path}
                         to={item.path}
                         end={item.exact}
+                        onClick={() => setMobileOpen(false)}
                         className={({ isActive }) =>
                           `sidebar-link ${isActive ? "active" : ""} ${
                             collapsed ? "justify-center !px-0 !py-2.5" : ""
@@ -420,6 +471,7 @@ const Layout = ({ children }) => {
 
       {/* ── MAIN CONTENT AREA ── */}
       <div
+        className="app-main-area"
         style={{
           flex: 1,
           display: "flex",
@@ -434,6 +486,7 @@ const Layout = ({ children }) => {
       >
         {/* Top Header Bar */}
         <header
+          className="app-header"
           style={{
             height: 56,
             backgroundColor: "#ffffff",
@@ -450,23 +503,45 @@ const Layout = ({ children }) => {
             flexShrink: 0,
           }}
         >
-          {/* Left: Breadcrumb & Title */}
-          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-            {getBreadcrumbGroup() && (
-              <>
-                <span style={{ fontSize: 12, fontWeight: 500, color: "#9ca3af" }}>
-                  {getBreadcrumbGroup()}
-                </span>
-                <ChevronRight size={13} color="#d1d5db" />
-              </>
-            )}
-            <h1 style={{ fontSize: 14, fontWeight: 600, color: "#111827", letterSpacing: "-0.01em", margin: 0 }}>
-              {getPageTitle()}
-            </h1>
+          {/* Left: Mobile Hamburger + Breadcrumb & Title */}
+          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+            <button
+              onClick={() => setMobileOpen(true)}
+              className="lg:hidden"
+              style={{
+                width: 34,
+                height: 34,
+                borderRadius: 10,
+                border: "1px solid #e5e7eb",
+                backgroundColor: "#f9fafb",
+                color: "#111827",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                cursor: "pointer",
+              }}
+              title="Open Navigation"
+            >
+              <Menu size={18} />
+            </button>
+
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              {getBreadcrumbGroup() && (
+                <>
+                  <span className="hidden sm:inline" style={{ fontSize: 12, fontWeight: 500, color: "#9ca3af" }}>
+                    {getBreadcrumbGroup()}
+                  </span>
+                  <ChevronRight size={13} color="#d1d5db" className="hidden sm:inline" />
+                </>
+              )}
+              <h1 style={{ fontSize: 14, fontWeight: 600, color: "#111827", letterSpacing: "-0.01em", margin: 0 }}>
+                {getPageTitle()}
+              </h1>
+            </div>
           </div>
 
           {/* Header Right Actions */}
-          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
             {/* Quick Search */}
             <div style={{ position: "relative" }} className="hidden md:block">
               <Search size={14} color="#9ca3af" style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)" }} />
@@ -474,7 +549,7 @@ const Layout = ({ children }) => {
                 type="text"
                 placeholder="Search..."
                 style={{
-                  width: 200,
+                  width: 180,
                   height: 34,
                   paddingLeft: 34,
                   paddingRight: 14,
@@ -530,7 +605,7 @@ const Layout = ({ children }) => {
               <span style={{ width: 6, height: 6, backgroundColor: "#FD4B23", borderRadius: "50%", position: "absolute", top: 7, right: 7, border: "2px solid #ffffff" }} />
             </button>
 
-            <div style={{ height: 20, width: 1, backgroundColor: "#e5e7eb" }} />
+            <div className="hidden sm:block" style={{ height: 20, width: 1, backgroundColor: "#e5e7eb" }} />
 
             {/* Company Badge */}
             <div className="hidden lg:flex" style={{ alignItems: "center", gap: 6, padding: "4px 10px", borderRadius: 8, backgroundColor: "#f9fafb", border: "1px solid #e5e7eb", fontSize: 11, fontWeight: 600, color: "#374151" }}>
@@ -591,7 +666,7 @@ const Layout = ({ children }) => {
                       boxShadow: "0 12px 30px -5px rgba(0,0,0,0.12), 0 4px 10px -2px rgba(0,0,0,0.05)",
                       border: "1px solid #e5e7eb",
                       padding: "4px 0",
-                      zIndex: 50,
+                      zIndex: 60,
                     }}
                   >
                     <div style={{ padding: "10px 14px", borderBottom: "1px solid #f3f4f6" }}>
@@ -690,7 +765,7 @@ const Layout = ({ children }) => {
 
         {/* Dynamic Page Content */}
         <main
-          className="custom-scrollbar"
+          className="app-main-content custom-scrollbar"
           style={{
             flex: 1,
             backgroundColor: "#F6F7F9",

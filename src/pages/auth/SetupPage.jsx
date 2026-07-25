@@ -45,6 +45,7 @@ const Field = ({ label, id, type = "text", name, value, onChange, placeholder, r
         minLength={minLength}
         placeholder={placeholder}
         autoComplete={type === "password" || toggleVisible !== undefined ? "new-password" : "off"}
+        className="auth-input"
         style={{
           width: "100%",
           height: 48,
@@ -76,18 +77,21 @@ const Field = ({ label, id, type = "text", name, value, onChange, placeholder, r
           tabIndex={-1}
           onClick={onToggle}
           aria-label={visible ? "Hide password" : "Show password"}
+          className="auth-pwd-toggle"
           style={{
             position: "absolute",
-            right: 14,
-            top: "50%",
-            transform: "translateY(-50%)",
+            right: 0,
+            top: 0,
+            bottom: 0,
+            width: 44,
             background: "none",
             border: "none",
-            padding: 2,
+            padding: 0,
             cursor: "pointer",
             color: "#52525b",
             display: "flex",
             alignItems: "center",
+            justifyContent: "center",
           }}
         >
           {visible ? <EyeOff size={16} strokeWidth={1.6} /> : <Eye size={16} strokeWidth={1.6} />}
@@ -149,6 +153,7 @@ const SetupPage = () => {
 
   return (
     <div
+      className="auth-page"
       style={{
         minHeight: "100vh",
         display: "flex",
@@ -162,10 +167,8 @@ const SetupPage = () => {
     >
       {/* ── background ── */}
       <div style={{ position: "absolute", inset: 0, pointerEvents: "none" }}>
-        {/* Radial glows */}
         <div style={{ position: "absolute", top: -300, right: -250, width: 750, height: 750, background: "radial-gradient(circle, rgba(253,75,35,0.05) 0%, transparent 70%)", borderRadius: "50%" }} />
         <div style={{ position: "absolute", bottom: -200, left: -200, width: 550, height: 550, background: "radial-gradient(circle, rgba(253,75,35,0.025) 0%, transparent 70%)", borderRadius: "50%" }} />
-        {/* Grid */}
         <div
           style={{
             position: "absolute",
@@ -182,6 +185,7 @@ const SetupPage = () => {
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 0.5 }}
+        className="auth-wrapper"
         style={{ position: "relative", zIndex: 10, width: "100%", maxWidth: 1060, margin: "0 auto", padding: "24px 16px" }}
       >
         {/* ── brand ── */}
@@ -220,6 +224,7 @@ const SetupPage = () => {
           initial={{ opacity: 0, y: 16, scale: 0.99 }}
           animate={{ opacity: 1, y: 0, scale: 1 }}
           transition={{ duration: 0.55, delay: 0.1, ease: [0.22, 1, 0.36, 1] }}
+          className="auth-card"
           style={{
             position: "relative",
             borderRadius: 20,
@@ -234,10 +239,10 @@ const SetupPage = () => {
           {/* Top gradient line */}
           <div style={{ position: "absolute", top: 0, left: "15%", right: "15%", height: 1, background: "linear-gradient(90deg, transparent, rgba(255,255,255,0.08), transparent)" }} />
 
-          <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: 0 }} className="lg:!grid-cols-2">
+          <div className="auth-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 0 }}>
 
             {/* ═══ LEFT ═══ */}
-            <div style={{ padding: "48px 44px", display: "flex", flexDirection: "column", justifyContent: "space-between", borderRight: "none" }} className="lg:!border-r lg:!border-r-[rgba(255,255,255,0.04)] max-lg:!border-b max-lg:!border-b-[rgba(255,255,255,0.04)]">
+            <div className="auth-left-panel" style={{ padding: "48px 44px", display: "flex", flexDirection: "column", justifyContent: "space-between", borderRight: "1px solid rgba(255,255,255,0.04)" }}>
               <motion.div initial="hidden" animate="show" variants={{ show: { transition: { staggerChildren: 0.06, delayChildren: 0.2 } } }}>
                 {/* Heading */}
                 <motion.h1
@@ -324,7 +329,7 @@ const SetupPage = () => {
             </div>
 
             {/* ═══ RIGHT ═══ */}
-            <div style={{ padding: "48px 44px", display: "flex", flexDirection: "column", justifyContent: "center" }}>
+            <div className="auth-right-panel" style={{ padding: "48px 44px", display: "flex", flexDirection: "column", justifyContent: "center" }}>
               <motion.div initial="hidden" animate="show" variants={{ show: { transition: { staggerChildren: 0.06, delayChildren: 0.25 } } }}>
 
                 <motion.div variants={fadeUp} custom={0} style={{ marginBottom: 28 }}>
