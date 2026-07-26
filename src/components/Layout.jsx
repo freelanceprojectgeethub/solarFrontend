@@ -36,7 +36,6 @@ import {
   FileCheck,
   BarChart3,
   LogOut,
-  ChevronLeft,
   ChevronRight,
   Sun,
   Bell,
@@ -52,14 +51,15 @@ const Layout = ({ children }) => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
-  const [collapsed, setCollapsed] = useState(false);
-  const [mobileOpen, setMobileOpen] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(true);
   const [profileDropdown, setProfileDropdown] = useState(false);
   const dropdownRef = useRef(null);
 
   // Close mobile sidebar on route change
   useEffect(() => {
-    setMobileOpen(false);
+    if (window.innerWidth < 768) {
+      setSidebarOpen(false);
+    }
   }, [location.pathname]);
 
   // Close dropdown on outside click
@@ -160,58 +160,26 @@ const Layout = ({ children }) => {
   };
 
   return (
-    <div
-      className="app-layout-container"
-      style={{
-        display: "flex",
-        height: "100vh",
-        overflow: "hidden",
-        backgroundColor: "#09090c",
-        padding: "10px",
-        gap: "10px",
-        fontFamily: "'Inter', system-ui, -apple-system, sans-serif",
-      }}
-    >
+    <div className="min-h-screen bg-[#09090c] font-sans antialiased text-gray-100 relative">
       {/* ── MOBILE BACKDROP OVERLAY ── */}
-      <AnimatePresence>
-        {mobileOpen && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            onClick={() => setMobileOpen(false)}
-            className="mobile-backdrop"
-            style={{
-              position: "fixed",
-              inset: 0,
-              backgroundColor: "rgba(0, 0, 0, 0.65)",
-              backdropFilter: "blur(4px)",
-              WebkitBackdropFilter: "blur(4px)",
-              zIndex: 40,
-            }}
-          />
-        )}
-      </AnimatePresence>
+      {sidebarOpen && (
+        <div
+          className="fixed inset-0 bg-black/50 z-40 md:hidden backdrop-blur-xs"
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
 
       {/* ── SIDEBAR ── */}
       <aside
-        className={`app-sidebar ${mobileOpen ? "mobile-open" : ""}`}
+        className={`fixed top-0 left-0 h-screen w-64 z-50 flex flex-col transition-transform duration-300 ease-in-out ${
+          sidebarOpen ? "translate-x-0" : "-translate-x-full"
+        } ${!sidebarOpen ? "hidden md:flex" : "flex"}`}
         style={{
-          width: collapsed ? 72 : 252,
-          minWidth: collapsed ? 72 : 252,
-          height: "100%",
-          display: "flex",
-          flexDirection: "column",
-          borderRadius: 20,
           background: "linear-gradient(180deg, rgba(18,18,22,0.96) 0%, rgba(13,13,17,0.98) 100%)",
           backdropFilter: "blur(40px)",
           WebkitBackdropFilter: "blur(40px)",
-          border: "1px solid rgba(255,255,255,0.05)",
-          boxShadow: "0 0 0 0.5px rgba(255,255,255,0.03) inset, 0 20px 40px -10px rgba(0,0,0,0.5)",
-          transition: "width 0.3s cubic-bezier(0.22, 1, 0.36, 1), min-width 0.3s cubic-bezier(0.22, 1, 0.36, 1), transform 0.3s cubic-bezier(0.22, 1, 0.36, 1)",
-          position: "relative",
-          zIndex: 50,
-          overflow: "hidden",
+          borderRight: "1px solid rgba(255,255,255,0.05)",
+          boxShadow: "0 20px 40px -10px rgba(0,0,0,0.5)",
         }}
       >
         {/* Brand Header */}
@@ -221,7 +189,7 @@ const Layout = ({ children }) => {
             display: "flex",
             alignItems: "center",
             justifyContent: "space-between",
-            padding: collapsed ? "0 16px" : "0 20px",
+            padding: "0 20px",
             borderBottom: "1px solid rgba(255,255,255,0.04)",
             flexShrink: 0,
           }}
@@ -245,53 +213,19 @@ const Layout = ({ children }) => {
                 <Sun size={18} color="#fff" strokeWidth={2.2} />
               </div>
             </div>
-            {!collapsed && (
-              <div style={{ display: "flex", flexDirection: "column", lineHeight: 1 }}>
-                <span style={{ fontSize: 15, fontWeight: 700, color: "#fafafa", letterSpacing: "-0.02em" }}>
-                  Solar SaaS
-                </span>
-                <span style={{ fontSize: 8.5, fontWeight: 600, color: "rgba(253,75,35,0.75)", letterSpacing: "0.18em", textTransform: "uppercase", marginTop: 3 }}>
-                  Enterprise
-                </span>
-              </div>
-            )}
+            <div style={{ display: "flex", flexDirection: "column", lineHeight: 1 }}>
+              <span style={{ fontSize: 15, fontWeight: 700, color: "#fafafa", letterSpacing: "-0.02em" }}>
+                Solar SaaS
+              </span>
+              <span style={{ fontSize: 8.5, fontWeight: 600, color: "rgba(253,75,35,0.75)", letterSpacing: "0.18em", textTransform: "uppercase", marginTop: 3 }}>
+                Enterprise
+              </span>
+            </div>
           </div>
 
-          {/* Desktop Collapse Button */}
-          {!collapsed && (
-            <button
-              onClick={() => setCollapsed(true)}
-              className="hidden lg:flex"
-              style={{
-                width: 28,
-                height: 28,
-                borderRadius: 8,
-                border: "1px solid rgba(255,255,255,0.06)",
-                backgroundColor: "rgba(255,255,255,0.025)",
-                color: "#71717a",
-                alignItems: "center",
-                justifyContent: "center",
-                cursor: "pointer",
-                transition: "all 0.2s",
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.backgroundColor = "rgba(255,255,255,0.06)";
-                e.currentTarget.style.color = "#fafafa";
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.backgroundColor = "rgba(255,255,255,0.025)";
-                e.currentTarget.style.color = "#71717a";
-              }}
-              title="Collapse Sidebar"
-            >
-              <ChevronLeft size={15} strokeWidth={1.8} />
-            </button>
-          )}
-
-          {/* Mobile Close Button */}
+          {/* Close Button inside Sidebar Header */}
           <button
-            onClick={() => setMobileOpen(false)}
-            className="flex lg:hidden"
+            onClick={() => setSidebarOpen(false)}
             style={{
               width: 28,
               height: 28,
@@ -299,10 +233,12 @@ const Layout = ({ children }) => {
               border: "1px solid rgba(255,255,255,0.06)",
               backgroundColor: "rgba(255,255,255,0.05)",
               color: "#fafafa",
+              display: "flex",
               alignItems: "center",
               justifyContent: "center",
               cursor: "pointer",
             }}
+            title="Close Sidebar"
           >
             <X size={16} />
           </button>
@@ -313,28 +249,26 @@ const Layout = ({ children }) => {
           className="sidebar-scroll"
           style={{
             flex: 1,
-            padding: collapsed ? "16px 8px" : "16px 12px",
+            padding: "16px 12px",
             overflowY: "auto",
           }}
         >
           <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
             {navGroups.map((group, idx) => (
               <div key={idx}>
-                {!collapsed && (
-                  <h2
-                    style={{
-                      padding: "0 10px",
-                      fontSize: 10,
-                      fontWeight: 600,
-                      color: "#52525b",
-                      textTransform: "uppercase",
-                      letterSpacing: "0.12em",
-                      marginBottom: 6,
-                    }}
-                  >
-                    {group.title}
-                  </h2>
-                )}
+                <h2
+                  style={{
+                    padding: "0 10px",
+                    fontSize: 10,
+                    fontWeight: 600,
+                    color: "#52525b",
+                    textTransform: "uppercase",
+                    letterSpacing: "0.12em",
+                    marginBottom: 6,
+                  }}
+                >
+                  {group.title}
+                </h2>
                 <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
                   {group.items.map((item) => {
                     const Icon = item.icon;
@@ -343,16 +277,15 @@ const Layout = ({ children }) => {
                         key={item.path}
                         to={item.path}
                         end={item.exact}
-                        onClick={() => setMobileOpen(false)}
+                        onClick={() => {
+                          if (window.innerWidth < 768) setSidebarOpen(false);
+                        }}
                         className={({ isActive }) =>
-                          `sidebar-link ${isActive ? "active" : ""} ${
-                            collapsed ? "justify-center !px-0 !py-2.5" : ""
-                          }`
+                          `sidebar-link ${isActive ? "active" : ""}`
                         }
-                        title={collapsed ? item.name : undefined}
                       >
                         <Icon size={17} strokeWidth={1.8} style={{ flexShrink: 0 }} />
-                        {!collapsed && <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{item.name}</span>}
+                        <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{item.name}</span>
                       </NavLink>
                     );
                   })}
@@ -365,124 +298,86 @@ const Layout = ({ children }) => {
         {/* User Footer */}
         <div
           style={{
-            padding: collapsed ? 8 : 12,
+            padding: 12,
             borderTop: "1px solid rgba(255,255,255,0.04)",
             flexShrink: 0,
           }}
         >
-          {!collapsed ? (
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "space-between",
-                padding: "10px 12px",
-                borderRadius: 14,
-                backgroundColor: "rgba(255,255,255,0.03)",
-                border: "1px solid rgba(255,255,255,0.05)",
-              }}
-            >
-              <div style={{ display: "flex", alignItems: "center", gap: 10, overflow: "hidden" }}>
-                <div
-                  style={{
-                    width: 32,
-                    height: 32,
-                    borderRadius: 10,
-                    background: "linear-gradient(135deg, #FD4B23, #e5401e)",
-                    color: "#fff",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    fontWeight: 700,
-                    fontSize: 12,
-                    flexShrink: 0,
-                    boxShadow: "0 2px 8px rgba(253,75,35,0.25)",
-                  }}
-                >
-                  {user?.name ? user.name.charAt(0).toUpperCase() : "A"}
-                </div>
-                <div style={{ display: "flex", flexDirection: "column", overflow: "hidden", lineHeight: 1.3 }}>
-                  <span style={{ fontSize: 12, fontWeight: 600, color: "rgba(250,250,250,0.92)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                    {user?.name || "Lalit Agrawal"}
-                  </span>
-                  <span style={{ fontSize: 10, color: "#52525b", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                    {user?.roleId?.name || "Super Admin"}
-                  </span>
-                </div>
-              </div>
-              <button
-                onClick={handleLogout}
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              padding: "10px 12px",
+              borderRadius: 14,
+              backgroundColor: "rgba(255,255,255,0.03)",
+              border: "1px solid rgba(255,255,255,0.05)",
+            }}
+          >
+            <div style={{ display: "flex", alignItems: "center", gap: 10, overflow: "hidden" }}>
+              <div
                 style={{
-                  width: 28,
-                  height: 28,
-                  borderRadius: 8,
-                  border: "none",
-                  backgroundColor: "transparent",
-                  color: "#52525b",
+                  width: 32,
+                  height: 32,
+                  borderRadius: 10,
+                  background: "linear-gradient(135deg, #FD4B23, #e5401e)",
+                  color: "#fff",
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
-                  cursor: "pointer",
-                  transition: "all 0.2s",
+                  fontWeight: 700,
+                  fontSize: 12,
+                  flexShrink: 0,
+                  boxShadow: "0 2px 8px rgba(253,75,35,0.25)",
                 }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.backgroundColor = "rgba(239,68,68,0.1)";
-                  e.currentTarget.style.color = "#f87171";
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.backgroundColor = "transparent";
-                  e.currentTarget.style.color = "#52525b";
-                }}
-                title="Logout"
               >
-                <LogOut size={14} strokeWidth={1.8} />
-              </button>
+                {user?.name ? user.name.charAt(0).toUpperCase() : "A"}
+              </div>
+              <div style={{ display: "flex", flexDirection: "column", overflow: "hidden", lineHeight: 1.3 }}>
+                <span style={{ fontSize: 12, fontWeight: 600, color: "rgba(250,250,250,0.92)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                  {user?.name || "Lalit Agrawal"}
+                </span>
+                <span style={{ fontSize: 10, color: "#52525b", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                  {user?.roleId?.name || "Super Admin"}
+                </span>
+              </div>
             </div>
-          ) : (
             <button
-              onClick={() => setCollapsed(false)}
+              onClick={handleLogout}
               style={{
-                width: "100%",
-                padding: "8px 0",
-                display: "flex",
-                justifyContent: "center",
-                borderRadius: 10,
+                width: 28,
+                height: 28,
+                borderRadius: 8,
                 border: "none",
-                backgroundColor: "rgba(255,255,255,0.025)",
-                color: "#71717a",
+                backgroundColor: "transparent",
+                color: "#52525b",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
                 cursor: "pointer",
                 transition: "all 0.2s",
               }}
               onMouseEnter={(e) => {
-                e.currentTarget.style.backgroundColor = "rgba(255,255,255,0.06)";
-                e.currentTarget.style.color = "#fafafa";
+                e.currentTarget.style.backgroundColor = "rgba(239,68,68,0.1)";
+                e.currentTarget.style.color = "#f87171";
               }}
               onMouseLeave={(e) => {
-                e.currentTarget.style.backgroundColor = "rgba(255,255,255,0.025)";
-                e.currentTarget.style.color = "#71717a";
+                e.currentTarget.style.backgroundColor = "transparent";
+                e.currentTarget.style.color = "#52525b";
               }}
-              title="Expand Sidebar"
+              title="Logout"
             >
-              <ChevronRight size={16} strokeWidth={1.8} />
+              <LogOut size={14} strokeWidth={1.8} />
             </button>
-          )}
+          </div>
         </div>
       </aside>
 
       {/* ── MAIN CONTENT AREA ── */}
       <div
-        className="app-main-area"
-        style={{
-          flex: 1,
-          display: "flex",
-          flexDirection: "column",
-          height: "100%",
-          overflow: "hidden",
-          backgroundColor: "#ffffff",
-          borderRadius: 20,
-          border: "1px solid rgba(0,0,0,0.06)",
-          boxShadow: "0 10px 30px -10px rgba(0,0,0,0.05)",
-        }}
+        className={`min-h-screen flex flex-col transition-all duration-300 ease-in-out ${
+          sidebarOpen ? "md:ml-64" : "ml-0"
+        }`}
       >
         {/* Top Header Bar */}
         <header
@@ -498,16 +393,13 @@ const Layout = ({ children }) => {
             position: "sticky",
             top: 0,
             zIndex: 20,
-            borderTopLeftRadius: 20,
-            borderTopRightRadius: 20,
             flexShrink: 0,
           }}
         >
-          {/* Left: Mobile Hamburger + Breadcrumb & Title */}
+          {/* Left: Hamburger / Toggle Button + Breadcrumb & Title */}
           <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
             <button
-              onClick={() => setMobileOpen(true)}
-              className="lg:hidden"
+              onClick={() => setSidebarOpen((prev) => !prev)}
               style={{
                 width: 34,
                 height: 34,
@@ -519,10 +411,11 @@ const Layout = ({ children }) => {
                 alignItems: "center",
                 justifyContent: "center",
                 cursor: "pointer",
+                transition: "all 0.2s",
               }}
-              title="Open Navigation"
+              title="Toggle Sidebar"
             >
-              <Menu size={18} />
+              {sidebarOpen ? <X size={18} /> : <Menu size={18} />}
             </button>
 
             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
