@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   Sun,
   BarChart3,
@@ -19,13 +20,25 @@ import {
   Star,
   ChevronDown,
   Sparkles,
-  Lock
+  Lock,
+  Menu,
+  X
 } from "lucide-react";
+
+/* ─── Framer Motion Motion Variants ─── */
+const fadeInUp = {
+  hidden: { opacity: 0, y: 20 },
+  visible: (i = 0) => ({
+    opacity: 1,
+    y: 0,
+    transition: { duration: 0.5, delay: i * 0.1, ease: [0.16, 1, 0.3, 1] }
+  })
+};
 
 const LandingPage = () => {
   const [billingAnnual, setBillingAnnual] = useState(true);
-  const [activeTab, setActiveTab] = useState("dashboard");
   const [openFaq, setOpenFaq] = useState(0);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const toggleFaq = (index) => {
     setOpenFaq(openFaq === index ? null : index);
@@ -70,57 +83,30 @@ const LandingPage = () => {
         overflowX: "hidden"
       }}
     >
-      {/* ── TOP ANNOUNCEMENT BANNER ── */}
-      <div
-        style={{
-          backgroundColor: "#0a0d16",
-          borderBottom: "1px solid rgba(16, 185, 129, 0.2)",
-          padding: "10px 16px",
-          textAlign: "center",
-          fontSize: 12,
-          color: "#34d399",
-          fontWeight: 500,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          gap: 8
-        }}
-      >
-        <span
-          style={{
-            padding: "2px 10px",
-            borderRadius: 20,
-            backgroundColor: "rgba(16, 185, 129, 0.15)",
-            color: "#34d399",
-            fontWeight: 700,
-            fontSize: 10,
-            textTransform: "uppercase",
-            letterSpacing: "0.05em",
-            border: "1px solid rgba(16, 185, 129, 0.3)",
-            display: "inline-flex",
-            alignItems: "center",
-            gap: 4
+      {/* ── BACKGROUND AMBIENT LIGHTING & SUBTLE GRID ── */}
+      <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden">
+        <motion.div
+          animate={{
+            scale: [1, 1.08, 1],
+            opacity: [0.15, 0.25, 0.15]
           }}
-        >
-          <Sparkles size={12} /> New Version
-        </span>
-        <span style={{ color: "#cbd5e1" }}>
-          SolarSaaS 2.0 Multi-Tenant Enterprise ERP is live
-        </span>
-        <Link
-          to="/setup"
-          style={{
-            color: "#ffffff",
-            fontWeight: 600,
-            textDecoration: "underline",
-            marginLeft: 4,
-            display: "inline-flex",
-            alignItems: "center",
-            gap: 2
+          transition={{
+            duration: 8,
+            repeat: Infinity,
+            ease: "easeInOut"
           }}
-        >
-          Explore Free Trial <ChevronRight size={14} />
-        </Link>
+          className="absolute -top-40 left-1/2 -translate-x-1/2 w-[800px] sm:w-[1200px] h-[500px] sm:h-[700px] rounded-full blur-[140px]"
+          style={{
+            background: "radial-gradient(circle, rgba(16,185,129,0.35) 0%, rgba(6,182,212,0.15) 50%, transparent 80%)"
+          }}
+        />
+        <div
+          className="absolute inset-0 opacity-[0.02]"
+          style={{
+            backgroundImage: `linear-gradient(rgba(255,255,255,0.15) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.15) 1px, transparent 1px)`,
+            backgroundSize: "40px 40px"
+          }}
+        />
       </div>
 
       {/* ── STICKY GLASS NAVBAR ── */}
@@ -162,7 +148,7 @@ const LandingPage = () => {
             >
               <Sun size={20} strokeWidth={2.2} />
             </div>
-            <div style={{ display: "flex", flexDirection: "column", lineHeight: 1 }}>
+            <div className="hidden sm:flex" style={{ flexDirection: "column", lineHeight: 1 }}>
               <span style={{ fontSize: 18, fontWeight: 800, color: "#ffffff", letterSpacing: "-0.02em" }}>
                 SolarSaaS
               </span>
@@ -172,46 +158,92 @@ const LandingPage = () => {
             </div>
           </Link>
 
-          {/* Navigation Links */}
-          <nav className="hidden md:flex" style={{ display: "flex", alignItems: "center", gap: 32, fontSize: 13, fontWeight: 500, color: "#94a3b8" }}>
-            <a href="#features" style={{ color: "#94a3b8", textDecoration: "none" }}>Features</a>
-            <a href="#modules" style={{ color: "#94a3b8", textDecoration: "none" }}>Modules</a>
-            <a href="#testimonials" style={{ color: "#94a3b8", textDecoration: "none" }}>Testimonials</a>
-            <a href="#pricing" style={{ color: "#94a3b8", textDecoration: "none" }}>Pricing</a>
-            <a href="#faq" style={{ color: "#94a3b8", textDecoration: "none" }}>FAQ</a>
-          </nav>
-
-          {/* Actions */}
+          {/* Right Header Actions */}
           <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
-            <Link
-              to="/login"
-              style={{ fontSize: 13, fontWeight: 600, color: "#cbd5e1", textDecoration: "none" }}
-              className="hidden sm:inline"
-            >
-              Sign In
-            </Link>
-            <Link
-              to="/setup"
+            <motion.div whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.96 }}>
+              <Link
+                to="/setup"
+                style={{
+                  backgroundColor: "#10b981",
+                  color: "#ffffff",
+                  padding: "10px 22px",
+                  borderRadius: 30,
+                  fontSize: 13,
+                  fontWeight: 700,
+                  textDecoration: "none",
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: 6,
+                  boxShadow: "0 4px 14px rgba(16, 185, 129, 0.3)"
+                }}
+              >
+                <span>Get Started</span>
+                <ArrowRight size={14} />
+              </Link>
+            </motion.div>
+
+            {/* Clickable 3-line Menu Button */}
+            <button
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
               style={{
-                backgroundColor: "#10b981",
-                color: "#ffffff",
-                padding: "10px 22px",
-                borderRadius: 30,
-                fontSize: 13,
-                fontWeight: 700,
-                textDecoration: "none",
-                display: "inline-flex",
+                width: 40,
+                height: 40,
+                borderRadius: 10,
+                backgroundColor: "rgba(255, 255, 255, 0.06)",
+                border: "1px solid rgba(255, 255, 255, 0.12)",
+                color: "#f1f5f9",
+                display: "flex",
                 alignItems: "center",
-                gap: 6,
-                boxShadow: "0 4px 14px rgba(16, 185, 129, 0.3)",
+                justifyContent: "center",
+                cursor: "pointer",
                 transition: "all 0.2s"
               }}
+              aria-label="Toggle Navigation Menu"
             >
-              <span>Get Started</span>
-              <ArrowRight size={14} />
-            </Link>
+              {mobileMenuOpen ? <X size={20} /> : <Menu size={20} />}
+            </button>
           </div>
         </div>
+
+        {/* ── CLICKABLE 3-LINE MENU DRAWER ── */}
+        <AnimatePresence>
+          {mobileMenuOpen && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: "auto" }}
+              exit={{ opacity: 0, height: 0 }}
+              transition={{ duration: 0.25 }}
+              style={{
+                maxWidth: 1150,
+                margin: "0 auto",
+                borderTop: "1px solid rgba(255, 255, 255, 0.1)",
+                marginTop: 14,
+                paddingTop: 20,
+                paddingBottom: 20,
+                display: "flex",
+                flexDirection: "column",
+                gap: 16,
+                fontSize: 15,
+                fontWeight: 600,
+                color: "#cbd5e1"
+              }}
+            >
+              <a href="#features" onClick={() => setMobileMenuOpen(false)} style={{ color: "#f1f5f9", textDecoration: "none", padding: "4px 0" }}>Features</a>
+              <a href="#modules" onClick={() => setMobileMenuOpen(false)} style={{ color: "#f1f5f9", textDecoration: "none", padding: "4px 0" }}>Modules</a>
+              <a href="#testimonials" onClick={() => setMobileMenuOpen(false)} style={{ color: "#f1f5f9", textDecoration: "none", padding: "4px 0" }}>Testimonials</a>
+              <a href="#pricing" onClick={() => setMobileMenuOpen(false)} style={{ color: "#f1f5f9", textDecoration: "none", padding: "4px 0" }}>Pricing</a>
+              <a href="#faq" onClick={() => setMobileMenuOpen(false)} style={{ color: "#f1f5f9", textDecoration: "none", padding: "4px 0" }}>FAQ</a>
+              <div style={{ paddingTop: 14, borderTop: "1px solid rgba(255, 255, 255, 0.08)", display: "flex", flexDirection: "column", gap: 12 }}>
+                <Link to="/login" onClick={() => setMobileMenuOpen(false)} style={{ textDecoration: "none", color: "#ffffff", fontWeight: 600, padding: "12px", textAlign: "center", borderRadius: 10, backgroundColor: "rgba(255, 255, 255, 0.05)" }}>
+                  Sign In
+                </Link>
+                <Link to="/setup" onClick={() => setMobileMenuOpen(false)} style={{ textDecoration: "none", color: "#ffffff", fontWeight: 700, padding: "14px", textAlign: "center", borderRadius: 30, backgroundColor: "#10b981", boxShadow: "0 4px 14px rgba(16, 185, 129, 0.3)" }}>
+                  Start 14-Day Free Trial
+                </Link>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </header>
 
       {/* ── MAIN CONTAINER ── */}
@@ -221,7 +253,11 @@ const LandingPage = () => {
         <section style={{ padding: "80px 0 60px 0", textAlign: "center", display: "flex", flexDirection: "column", alignItems: "center" }}>
           
           {/* Badge Pill */}
-          <div
+          <motion.div
+            initial="hidden"
+            animate="visible"
+            custom={0}
+            variants={fadeInUp}
             style={{
               padding: "6px 16px",
               borderRadius: 20,
@@ -238,12 +274,16 @@ const LandingPage = () => {
           >
             <Zap size={14} />
             <span>Built Specifically for Solar Distributors & Dealers</span>
-          </div>
+          </motion.div>
 
           {/* Headline */}
-          <h1
+          <motion.h1
+            initial="hidden"
+            animate="visible"
+            custom={1}
+            variants={fadeInUp}
             style={{
-              fontSize: "clamp(36px, 5vw, 56px)",
+              fontSize: "clamp(32px, 5vw, 56px)",
               fontWeight: 800,
               color: "#ffffff",
               letterSpacing: "-0.03em",
@@ -265,10 +305,14 @@ const LandingPage = () => {
             >
               With Enterprise Precision & Ease
             </span>
-          </h1>
+          </motion.h1>
 
           {/* Subtitle */}
-          <p
+          <motion.p
+            initial="hidden"
+            animate="visible"
+            custom={2}
+            variants={fadeInUp}
             style={{
               fontSize: 17,
               color: "#94a3b8",
@@ -279,34 +323,48 @@ const LandingPage = () => {
             }}
           >
             The all-in-one multi-tenant ERP platform engineered for solar equipment distributors and dealers. Streamline purchases, sales, inventory, and multi-state GST tax compliance.
-          </p>
+          </motion.p>
 
           {/* Hero Action Button */}
-          <div style={{ marginBottom: 32 }}>
-            <Link
-              to="/setup"
-              style={{
-                backgroundColor: "#10b981",
-                color: "#ffffff",
-                padding: "16px 36px",
-                borderRadius: 30,
-                fontSize: 15,
-                fontWeight: 700,
-                textDecoration: "none",
-                display: "inline-flex",
-                alignItems: "center",
-                gap: 8,
-                boxShadow: "0 10px 30px rgba(16, 185, 129, 0.35)",
-                transition: "all 0.2s"
-              }}
-            >
-              <span>Start 14-Day Free Trial</span>
-              <ArrowRight size={18} />
-            </Link>
-          </div>
+          <motion.div
+            initial="hidden"
+            animate="visible"
+            custom={3}
+            variants={fadeInUp}
+            style={{ marginBottom: 32 }}
+          >
+            <motion.div whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.96 }}>
+              <Link
+                to="/setup"
+                style={{
+                  backgroundColor: "#10b981",
+                  color: "#ffffff",
+                  padding: "16px 36px",
+                  borderRadius: 30,
+                  fontSize: 15,
+                  fontWeight: 700,
+                  textDecoration: "none",
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: 8,
+                  boxShadow: "0 10px 30px rgba(16, 185, 129, 0.35)",
+                  transition: "all 0.2s"
+                }}
+              >
+                <span>Start 14-Day Free Trial</span>
+                <ArrowRight size={18} />
+              </Link>
+            </motion.div>
+          </motion.div>
 
           {/* Micro Trust Points */}
-          <div style={{ display: "flex", flexWrap: "wrap", items: "center", justifyContent: "center", gap: 24, fontSize: 13, color: "#94a3b8", fontWeight: 500, marginBottom: 56 }}>
+          <motion.div
+            initial="hidden"
+            animate="visible"
+            custom={4}
+            variants={fadeInUp}
+            style={{ display: "flex", flexWrap: "wrap", items: "center", justifyCenter: "center", gap: 24, fontSize: 13, color: "#94a3b8", fontWeight: 500, marginBottom: 56 }}
+          >
             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
               <CheckCircle2 size={16} color="#34d399" />
               <span>14-day free trial</span>
@@ -319,10 +377,13 @@ const LandingPage = () => {
               <CheckCircle2 size={16} color="#34d399" />
               <span>Full GST tax engine</span>
             </div>
-          </div>
+          </motion.div>
 
           {/* ══ HERO PRODUCT SHOWCASE CARD (HIGH CONTRAST & VISIBLE) ══ */}
-          <div
+          <motion.div
+            initial={{ opacity: 0, y: 30, scale: 0.97 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            transition={{ duration: 0.7, delay: 0.3, ease: [0.16, 1, 0.3, 1] }}
             style={{
               width: "100%",
               maxWidth: 960,
@@ -383,10 +444,12 @@ const LandingPage = () => {
               <div style={{ height: 100, display: "flex", alignItems: "flex-end", gap: 10 }}>
                 {[40, 65, 50, 85, 60, 95, 75, 100, 80, 110].map((val, idx) => (
                   <div key={idx} style={{ flex: 1, backgroundColor: "rgba(255, 255, 255, 0.04)", borderRadius: "4px 4px 0 0", height: "100%", display: "flex", alignItems: "flex-end" }}>
-                    <div
+                    <motion.div
+                      initial={{ height: 0 }}
+                      animate={{ height: `${val}%` }}
+                      transition={{ duration: 0.8, delay: 0.4 + idx * 0.05 }}
                       style={{
                         width: "100%",
-                        height: `${val}%`,
                         background: "linear-gradient(to top, #059669, #34d399)",
                         borderRadius: "4px 4px 0 0"
                       }}
@@ -396,7 +459,7 @@ const LandingPage = () => {
               </div>
             </div>
 
-          </div>
+          </motion.div>
 
         </section>
 
@@ -435,9 +498,10 @@ const LandingPage = () => {
             </p>
           </div>
 
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: 28 }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 28 }}>
             {/* Feature 1 */}
-            <div
+            <motion.div
+              whileHover={{ y: -6 }}
               style={{
                 backgroundColor: "#0d0f18",
                 border: "1px solid rgba(255, 255, 255, 0.12)",
@@ -445,7 +509,8 @@ const LandingPage = () => {
                 padding: "32px",
                 display: "flex",
                 flexDirection: "column",
-                justifyContent: "space-between"
+                justifyContent: "space-between",
+                transition: "all 0.25s"
               }}
             >
               <div>
@@ -472,10 +537,11 @@ const LandingPage = () => {
                   Get real-time insights into your sales, purchases, supplier ledgers, and cash flows with instant KPI tracking.
                 </p>
               </div>
-            </div>
+            </motion.div>
 
             {/* Feature 2 */}
-            <div
+            <motion.div
+              whileHover={{ y: -6 }}
               style={{
                 backgroundColor: "#0d0f18",
                 border: "1px solid rgba(255, 255, 255, 0.12)",
@@ -483,7 +549,8 @@ const LandingPage = () => {
                 padding: "32px",
                 display: "flex",
                 flexDirection: "column",
-                justifyContent: "space-between"
+                justifyContent: "space-between",
+                transition: "all 0.25s"
               }}
             >
               <div>
@@ -510,10 +577,11 @@ const LandingPage = () => {
                   Control who sees what. Give your accountant access only to reports, sales reps to billing, and admins full control.
                 </p>
               </div>
-            </div>
+            </motion.div>
 
             {/* Feature 3 */}
-            <div
+            <motion.div
+              whileHover={{ y: -6 }}
               style={{
                 backgroundColor: "#0d0f18",
                 border: "1px solid rgba(255, 255, 255, 0.12)",
@@ -521,7 +589,8 @@ const LandingPage = () => {
                 padding: "32px",
                 display: "flex",
                 flexDirection: "column",
-                justifyContent: "space-between"
+                justifyContent: "space-between",
+                transition: "all 0.25s"
               }}
             >
               <div>
@@ -548,7 +617,7 @@ const LandingPage = () => {
                   Auto-calculated CGST, SGST &amp; IGST reports ready for filing with state-detection based on buyer GSTIN.
                 </p>
               </div>
-            </div>
+            </motion.div>
           </div>
         </section>
 
@@ -569,7 +638,7 @@ const LandingPage = () => {
               </h3>
             </div>
 
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 20 }}>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 20 }}>
               <div style={{ padding: "24px", borderRadius: 16, backgroundColor: "rgba(255, 255, 255, 0.02)", border: "1px solid rgba(255, 255, 255, 0.06)" }}>
                 <Package size={22} color="#34d399" style={{ marginBottom: 12 }} />
                 <h4 style={{ fontSize: 15, fontWeight: 700, color: "#ffffff", marginBottom: 6 }}>Item & Brand Master</h4>
@@ -606,7 +675,7 @@ const LandingPage = () => {
             </h2>
           </div>
 
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: 28 }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 28 }}>
             {[
               {
                 quote: "SolarSaaS completely eliminated our manual GST calculation errors. Managing 50+ dealer accounts is now effortless.",
@@ -627,8 +696,9 @@ const LandingPage = () => {
                 company: "GreenVolt Solar"
               }
             ].map((t, idx) => (
-              <div
+              <motion.div
                 key={idx}
+                whileHover={{ y: -4 }}
                 style={{
                   backgroundColor: "#0d0f18",
                   border: "1px solid rgba(255, 255, 255, 0.1)",
@@ -651,7 +721,7 @@ const LandingPage = () => {
                   <p style={{ fontSize: 15, fontWeight: 700, color: "#ffffff", margin: 0 }}>{t.name}</p>
                   <p style={{ fontSize: 12, color: "#94a3b8", margin: "2px 0 0 0" }}>{t.title} • <span style={{ color: "#34d399", fontWeight: 600 }}>{t.company}</span></p>
                 </div>
-              </div>
+              </motion.div>
             ))}
           </div>
         </section>
@@ -795,11 +865,19 @@ const LandingPage = () => {
                   <span>{faq.q}</span>
                   <ChevronDown size={18} color={openFaq === idx ? "#34d399" : "#94a3b8"} style={{ transition: "transform 0.2s", transform: openFaq === idx ? "rotate(180deg)" : "rotate(0deg)" }} />
                 </button>
-                {openFaq === idx && (
-                  <div style={{ padding: "0 24px 24px 24px", fontSize: 13, color: "#94a3b8", lineHeight: 1.6, borderTop: "1px solid rgba(255, 255, 255, 0.05)", paddingTop: 16 }}>
-                    {faq.a}
-                  </div>
-                )}
+                <AnimatePresence>
+                  {openFaq === idx && (
+                    <motion.div
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: "auto", opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      transition={{ duration: 0.2 }}
+                      style={{ padding: "0 24px 24px 24px", fontSize: 13, color: "#94a3b8", lineHeight: 1.6, borderTop: "1px solid rgba(255, 255, 255, 0.05)", paddingTop: 16 }}
+                    >
+                      {faq.a}
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </div>
             ))}
           </div>
@@ -825,32 +903,34 @@ const LandingPage = () => {
               Join leading solar distributors across the country using SolarSaaS to automate billing, compliance, and multi-tenant management.
             </p>
             <div style={{ display: "flex", justifyContent: "center" }}>
-              <Link
-                to="/setup"
-                style={{
-                  backgroundColor: "#10b981",
-                  color: "#ffffff",
-                  padding: "16px 36px",
-                  borderRadius: 30,
-                  fontSize: 15,
-                  fontWeight: 700,
-                  textDecoration: "none",
-                  display: "inline-flex",
-                  alignItems: "center",
-                  gap: 8,
-                  boxShadow: "0 10px 30px rgba(16, 185, 129, 0.3)"
-                }}
-              >
-                <span>Start 14-Day Free Trial</span>
-                <ArrowRight size={18} />
-              </Link>
+              <motion.div whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.96 }}>
+                <Link
+                  to="/setup"
+                  style={{
+                    backgroundColor: "#10b981",
+                    color: "#ffffff",
+                    padding: "16px 36px",
+                    borderRadius: 30,
+                    fontSize: 15,
+                    fontWeight: 700,
+                    textDecoration: "none",
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: 8,
+                    boxShadow: "0 10px 30px rgba(16, 185, 129, 0.3)"
+                  }}
+                >
+                  <span>Start 14-Day Free Trial</span>
+                  <ArrowRight size={18} />
+                </Link>
+              </motion.div>
             </div>
           </div>
         </section>
       </main>
 
       {/* ── FOOTER ── */}
-      <footer style={{ borderTop: "1px solid rgba(255, 255, 255, 0.08)", backgroundColor: "#04050a", padding: "48px 24px", textStyle: "center", fontSize: 13, color: "#64748b" }}>
+      <footer style={{ borderTop: "1px solid rgba(255, 255, 255, 0.08)", backgroundColor: "#04050a", padding: "48px 24px", fontSize: 13, color: "#64748b" }}>
         <div style={{ maxWidth: 1150, margin: "0 auto", display: "flex", flexWrap: "wrap", alignItems: "center", justifyBetween: "space-between", gap: 16 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
             <div style={{ width: 28, height: 28, borderRadius: 8, background: "linear-gradient(135deg, #FD4B23, #10b981)", color: "#ffffff", display: "flex", alignItems: "center", justifyContent: "center" }}>
