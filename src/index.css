@@ -33,7 +33,9 @@
 }
 
 /* ── Base Reset & Typography ── */
-*, *::before, *::after {
+*,
+*::before,
+*::after {
   margin: 0;
   padding: 0;
   box-sizing: border-box;
@@ -45,7 +47,15 @@ html {
   -moz-osx-font-smoothing: grayscale;
 }
 
-body, button, input, select, textarea, table, .card, .dashboard-card, .dashboard-kpi {
+body,
+button,
+input,
+select,
+textarea,
+table,
+.card,
+.dashboard-card,
+.dashboard-kpi {
   font-family: 'Inter', system-ui, -apple-system, sans-serif !important;
   background-color: var(--color-page-bg);
   color: var(--color-text-primary);
@@ -53,7 +63,13 @@ body, button, input, select, textarea, table, .card, .dashboard-card, .dashboard
 }
 
 /* ── Headings Custom Font (Inter) ── */
-h1, h2, h3, h4, h5, h6, .font-heading {
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+.font-heading {
   font-family: 'Inter', system-ui, -apple-system, sans-serif !important;
   font-weight: 600;
 }
@@ -79,33 +95,64 @@ h1, h2, h3, h4, h5, h6, .font-heading {
 
 /* ── Sidebar Hidden Scrollbar ── */
 .sidebar-scroll {
-  -ms-overflow-style: none;  /* IE and Edge */
-  scrollbar-width: none;     /* Firefox */
+  -ms-overflow-style: none;
+  /* IE and Edge */
+  scrollbar-width: none;
+  /* Firefox */
 }
 
 .sidebar-scroll::-webkit-scrollbar {
-  display: none;             /* Chrome, Safari, Opera */
+  display: none;
+  /* Chrome, Safari, Opera */
 }
 
 /* ── Keyframes & Animations ── */
 @keyframes fadeIn {
-  from { opacity: 0; transform: translateY(6px); }
-  to   { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 @keyframes slideDown {
-  from { opacity: 0; transform: translateY(-10px); }
-  to   { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 @keyframes scaleIn {
-  from { opacity: 0; transform: scale(0.96); }
-  to   { opacity: 1; transform: scale(1); }
+  from {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
 }
 
 @keyframes floatSlow {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-4px); }
+
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+
+  50% {
+    transform: translateY(-4px);
+  }
 }
 
 .animate-fade-in {
@@ -121,11 +168,25 @@ h1, h2, h3, h4, h5, h6, .font-heading {
 }
 
 /* ── Staggered Delays ── */
-.stagger-1 { animation-delay: 0.04s; }
-.stagger-2 { animation-delay: 0.08s; }
-.stagger-3 { animation-delay: 0.12s; }
-.stagger-4 { animation-delay: 0.16s; }
-.stagger-5 { animation-delay: 0.20s; }
+.stagger-1 {
+  animation-delay: 0.04s;
+}
+
+.stagger-2 {
+  animation-delay: 0.08s;
+}
+
+.stagger-3 {
+  animation-delay: 0.12s;
+}
+
+.stagger-4 {
+  animation-delay: 0.16s;
+}
+
+.stagger-5 {
+  animation-delay: 0.20s;
+}
 
 /* ── Glassmorphism & Cards ── */
 .glass-panel {
@@ -257,8 +318,15 @@ h1, h2, h3, h4, h5, h6, .font-heading {
 }
 
 @keyframes pulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.5; }
+
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0.5;
+  }
 }
 
 .dashboard-hero-metric {
@@ -401,10 +469,21 @@ h1, h2, h3, h4, h5, h6, .font-heading {
   border-radius: 16px 16px 0 0;
 }
 
-.dashboard-kpi-accent::before { background: linear-gradient(90deg, var(--color-accent), #ff6b4a); }
-.dashboard-kpi-secondary::before { background: linear-gradient(90deg, var(--color-secondary), #ffe4a8); }
-.dashboard-kpi-success::before { background: linear-gradient(90deg, var(--color-success), #34d399); }
-.dashboard-kpi-dark::before { background: linear-gradient(90deg, var(--color-dark), var(--color-dark-light)); }
+.dashboard-kpi-accent::before {
+  background: linear-gradient(90deg, var(--color-accent), #ff6b4a);
+}
+
+.dashboard-kpi-secondary::before {
+  background: linear-gradient(90deg, var(--color-secondary), #ffe4a8);
+}
+
+.dashboard-kpi-success::before {
+  background: linear-gradient(90deg, var(--color-success), #34d399);
+}
+
+.dashboard-kpi-dark::before {
+  background: linear-gradient(90deg, var(--color-dark), var(--color-dark-light));
+}
 
 .dashboard-kpi:hover {
   box-shadow: var(--shadow-card-hover);
@@ -722,7 +801,7 @@ h1, h2, h3, h4, h5, h6, .font-heading {
   padding: 0.625rem 0;
 }
 
-.dashboard-account-row + .dashboard-account-row {
+.dashboard-account-row+.dashboard-account-row {
   border-top: 1px solid rgba(253, 75, 35, 0.08);
 }
 
@@ -908,13 +987,13 @@ h1, h2, h3, h4, h5, h6, .font-heading {
   border: none;
   border-radius: 12px;
   cursor: pointer;
-  box-shadow: 0 1px 3px rgba(253, 75, 35, 0.3), inset 0 1px 0 rgba(255,255,255,0.15);
+  box-shadow: 0 1px 3px rgba(253, 75, 35, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.15);
   transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .btn-accent:hover {
   background: #E5401E;
-  box-shadow: 0 4px 12px rgba(253, 75, 35, 0.35), inset 0 1px 0 rgba(255,255,255,0.15);
+  box-shadow: 0 4px 12px rgba(253, 75, 35, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.15);
   transform: translateY(-1px);
 }
 
@@ -985,12 +1064,15 @@ h1, h2, h3, h4, h5, h6, .font-heading {
   .auth-grid {
     grid-template-columns: 1fr !important;
   }
+
   .auth-left-panel {
     display: none !important;
   }
+
   .auth-mobile-brand {
     display: flex !important;
   }
+
   .auth-mobile-footer {
     display: block !important;
   }
@@ -1001,9 +1083,11 @@ h1, h2, h3, h4, h5, h6, .font-heading {
   .auth-wrapper {
     padding: 32px 24px !important;
   }
+
   .auth-card {
     border-radius: 20px !important;
   }
+
   .auth-right-panel {
     padding: 48px 44px !important;
   }
@@ -1014,15 +1098,19 @@ h1, h2, h3, h4, h5, h6, .font-heading {
   .auth-page {
     align-items: flex-start !important;
   }
+
   .auth-wrapper {
     padding: 20px 12px !important;
   }
+
   .auth-card {
     border-radius: 16px !important;
   }
+
   .auth-right-panel {
     padding: 28px 20px !important;
   }
+
   /* Prevent iOS Safari input zoom — override font-size to 16px */
   .auth-input {
     font-size: 16px !important;
@@ -1034,9 +1122,11 @@ h1, h2, h3, h4, h5, h6, .font-heading {
   .auth-wrapper {
     padding: 16px 8px !important;
   }
+
   .auth-card {
     border-radius: 14px !important;
   }
+
   .auth-right-panel {
     padding: 24px 16px !important;
   }
@@ -1077,7 +1167,7 @@ h1, h2, h3, h4, h5, h6, .font-heading {
     min-width: 280px !important;
     border-radius: 0 20px 20px 0 !important;
     transform: translateX(-100%) !important;
-    box-shadow: 20px 0 50px rgba(0,0,0,0.6) !important;
+    box-shadow: 20px 0 50px rgba(0, 0, 0, 0.6) !important;
     z-index: 50 !important;
   }
 

@@ -34,6 +34,7 @@ const MODULES = [
   "Future Sales",
   "Payments",
   "Receipts",
+  "Reports",
 ];
 
 const ACTIONS = [

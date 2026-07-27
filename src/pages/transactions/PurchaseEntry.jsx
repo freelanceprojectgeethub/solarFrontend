@@ -405,9 +405,9 @@ const PurchaseEntry = () => {
                   cursor: "pointer",
                 }}
               >
-                <option value="pending">Pending Payment</option>
-                <option value="paid">Fully Paid</option>
-                <option value="partial">Partially Paid</option>
+                <option value="pending">Pending</option>
+                <option value="received">Received</option>
+                <option value="cancelled">Cancelled</option>
               </select>
             </div>
           </div>

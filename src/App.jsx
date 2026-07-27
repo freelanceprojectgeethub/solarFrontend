@@ -3,6 +3,8 @@ import { AuthProvider } from "./context/AuthContext";
 import { LoadingProvider } from "./context/LoadingContext";
 import LoadingScreen from "./components/LoadingScreen";
 import ProtectedRoute from "./components/ProtectedRoute";
+import LandingPage from "./pages/LandingPage";
+import SetupPage from "./pages/auth/SetupPage";
 import Login from "./pages/auth/Login";
 import Dashboard from "./pages/dashboard/Dashboard";
 import CompanyMaster from "./pages/masters/CompanyMaster";
@@ -36,6 +38,9 @@ import ProductWiseReport from "./pages/reports/ProductWiseReport";
 import BrandWiseReport from "./pages/reports/BrandWiseReport";
 import GstSummary from "./pages/reports/GstSummary";
 import ProfitMarginReport from "./pages/reports/ProfitMarginReport";
+import SuperAdminDashboard from "./pages/superAdmin/SuperAdminDashboard";
+import TenantList from "./pages/superAdmin/TenantList";
+import NotFound from "./pages/NotFound";
 
 function App() {
   return (
@@ -44,9 +49,11 @@ function App() {
       <AuthProvider>
         <BrowserRouter>
           <Routes>
+            <Route path="/" element={<LandingPage />} />
+            <Route path="/setup" element={<SetupPage />} />
             <Route path="/login" element={<Login />} />
             <Route
-              path="/"
+              path="/app"
               element={
                 <ProtectedRoute>
                   <Dashboard />
@@ -319,6 +326,27 @@ function App() {
                 </ProtectedRoute>
               }
             />
+
+            {/* Super Admin Routes */}
+            <Route
+              path="/super-admin/dashboard"
+              element={
+                <ProtectedRoute>
+                  <SuperAdminDashboard />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/super-admin/tenants"
+              element={
+                <ProtectedRoute>
+                  <TenantList />
+                </ProtectedRoute>
+              }
+            />
+
+            {/* Catch-all 404 Route */}
+            <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
       </AuthProvider>

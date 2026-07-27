@@ -82,7 +82,7 @@ const Layout = ({ children }) => {
     {
       title: "Overview",
       items: [
-        { name: "Dashboard", path: "/", icon: LayoutDashboard, exact: true },
+        { name: "Dashboard", path: "/app", icon: LayoutDashboard, exact: true },
       ],
     },
     {
@@ -140,17 +140,20 @@ const Layout = ({ children }) => {
 
   const getPageTitle = () => {
     const currentPath = location.pathname;
+    if (currentPath === "/super-admin/dashboard") return "Platform Dashboard";
+    if (currentPath === "/super-admin/tenants") return "Manage Tenants";
     for (const group of navGroups) {
       for (const item of group.items) {
         if (item.path === currentPath) return item.name;
       }
     }
-    if (currentPath === "/") return "Dashboard";
+    if (currentPath === "/app") return "Dashboard";
     return "Solar SaaS";
   };
 
   const getBreadcrumbGroup = () => {
     const currentPath = location.pathname;
+    if (currentPath.startsWith("/super-admin")) return "Super Admin";
     for (const group of navGroups) {
       for (const item of group.items) {
         if (item.path === currentPath) return group.title;
@@ -254,6 +257,50 @@ const Layout = ({ children }) => {
           }}
         >
           <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+            {user?.isSuperAdmin && (
+              <div>
+                <h2
+                  style={{
+                    padding: "0 10px",
+                    fontSize: 10,
+                    fontWeight: 700,
+                    color: "#FD4B23",
+                    textTransform: "uppercase",
+                    letterSpacing: "0.12em",
+                    marginBottom: 6,
+                  }}
+                >
+                  Super Admin
+                </h2>
+                <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+                  <NavLink
+                    to="/super-admin/dashboard"
+                    onClick={() => {
+                      if (window.innerWidth < 768) setSidebarOpen(false);
+                    }}
+                    className={({ isActive }) =>
+                      `sidebar-link ${isActive ? "active" : ""}`
+                    }
+                  >
+                    <LayoutDashboard size={17} strokeWidth={1.8} style={{ flexShrink: 0 }} />
+                    <span>Platform Dashboard</span>
+                  </NavLink>
+                  <NavLink
+                    to="/super-admin/tenants"
+                    onClick={() => {
+                      if (window.innerWidth < 768) setSidebarOpen(false);
+                    }}
+                    className={({ isActive }) =>
+                      `sidebar-link ${isActive ? "active" : ""}`
+                    }
+                  >
+                    <Building2 size={17} strokeWidth={1.8} style={{ flexShrink: 0 }} />
+                    <span>Manage Tenants</span>
+                  </NavLink>
+                </div>
+                <hr style={{ border: "none", borderTop: "1px solid rgba(255,255,255,0.06)", margin: "16px 10px 0 10px" }} />
+              </div>
+            )}
             {navGroups.map((group, idx) => (
               <div key={idx}>
                 <h2
@@ -271,6 +318,9 @@ const Layout = ({ children }) => {
                 </h2>
                 <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
                   {group.items.map((item) => {
+                    if (item.path === "/companies" && !user?.isSuperAdmin) {
+                      return null;
+                    }
                     const Icon = item.icon;
                     return (
                       <NavLink
