@@ -55,11 +55,9 @@ const Layout = ({ children }) => {
   const [profileDropdown, setProfileDropdown] = useState(false);
   const dropdownRef = useRef(null);
 
-  // Close mobile sidebar on route change
+  // Close sidebar on route change
   useEffect(() => {
-    if (window.innerWidth < 768) {
-      setSidebarOpen(false);
-    }
+    setSidebarOpen(false);
   }, [location.pathname]);
 
   // Close dropdown on outside click
@@ -275,9 +273,7 @@ const Layout = ({ children }) => {
                 <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
                   <NavLink
                     to="/super-admin/dashboard"
-                    onClick={() => {
-                      if (window.innerWidth < 768) setSidebarOpen(false);
-                    }}
+                    onClick={() => setSidebarOpen(false)}
                     className={({ isActive }) =>
                       `sidebar-link ${isActive ? "active" : ""}`
                     }
@@ -287,9 +283,7 @@ const Layout = ({ children }) => {
                   </NavLink>
                   <NavLink
                     to="/super-admin/tenants"
-                    onClick={() => {
-                      if (window.innerWidth < 768) setSidebarOpen(false);
-                    }}
+                    onClick={() => setSidebarOpen(false)}
                     className={({ isActive }) =>
                       `sidebar-link ${isActive ? "active" : ""}`
                     }
@@ -327,9 +321,7 @@ const Layout = ({ children }) => {
                         key={item.path}
                         to={item.path}
                         end={item.exact}
-                        onClick={() => {
-                          if (window.innerWidth < 768) setSidebarOpen(false);
-                        }}
+                        onClick={() => setSidebarOpen(false)}
                         className={({ isActive }) =>
                           `sidebar-link ${isActive ? "active" : ""}`
                         }
